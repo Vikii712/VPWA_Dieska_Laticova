@@ -60,7 +60,7 @@
 
         <div class="grid row justify-between">
           <div class="">
-            <q-btn label="Log-in" type="submit" color="accent" />
+            <q-btn to="/main" label="Log-in" type="submit" color="accent" />
             <q-btn label="Reset" type="reset" color="accent" flat class="q-ml-sm"/>
           </div>
           <div class="justify-end">

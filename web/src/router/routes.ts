@@ -3,11 +3,11 @@ import type { RouteRecordRaw } from 'vue-router';
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: () => import('layouts/LogPage.vue'),
+    component: () => import('layouts/LogLayout.vue'),
     children: [
       {
         path: '',
-        redirect: '/login'  //default co sa prve otvori
+        redirect: '/login'
       },
       {
         path: 'login',
@@ -19,6 +19,11 @@ const routes: RouteRecordRaw[] = [
       }
     ],
   },
+  {
+    path: '/main',
+    component: () => import('layouts/MainLayout.vue'),
+  },
+
 
 
 
