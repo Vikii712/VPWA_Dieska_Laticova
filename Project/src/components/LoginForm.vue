@@ -14,14 +14,6 @@
       >
         <q-input
             outlined
-            v-model="name"
-            label="Zadaj NickName*"
-            bg-color="deep-purple-1"
-            lazy-rules
-            :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
-        />
-        <q-input
-            outlined
             v-model="email"
             type="email"
             label="Zadaj Email*"
@@ -43,11 +35,11 @@
 
         <div class="grid row justify-between">
           <div class="">
-            <q-btn label="Register" type="submit" color="accent" />
+            <q-btn label="Log-in" type="submit" color="accent" />
             <q-btn label="Reset" type="reset" color="accent" flat class="q-ml-sm"/>
           </div>
           <div class="justify-end">
-            <q-btn to="/login" label="Login" color="purple"/>
+            <q-btn to="/register" label="Register" color="purple"/>
           </div>
         </div>
       </q-form>
@@ -64,7 +56,6 @@ import {useQuasar} from "quasar";
 import {ref} from "vue";
 
 const $q = useQuasar();
-const name = ref(null);
 const email = ref(null);
 const password = ref(null);
 
@@ -73,15 +64,15 @@ function onSubmit() {
     color: 'green-4',
     textColor: 'white',
     icon: 'cloud-done',
-    message: 'Registrovaný'
+    message: 'Prihlásený'
   });
 }
 
 function onReset() {
-  name.value = null;
   email.value = null;
   password.value = null;
 }
 </script>
+
 <style scoped>
 </style>
