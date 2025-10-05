@@ -1,9 +1,23 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {ref, computed} from "vue";
 
 const state = ref<string>('offline')
 const props = defineProps<{modelValue: boolean}>()
 const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
+
+const activityBorder = computed(() => {
+  let color = 'pink-10'
+  if(state.value === 'active') color = 'teal'
+  else if(state.value === 'away') color = '#0d47a1'
+  else color = '#f06292'
+
+  return {
+    border: `3px solid ${color}`,
+    borderRadius: '50%',
+    transition: 'border-color 1s ease',
+    display: 'inline-block'
+  }
+})
 
 </script>
 
@@ -18,8 +32,10 @@ const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
     class="bg-deep-purple-2"
   >
     <div class="column fit items-center">
-      <img alt="" src="../assets/images/user_icon.svg" width="70" class="q-py-md"/>
-      <p>Cookie monster</p>
+      <div class="q-pa-xs q-ma-md" :style="activityBorder">
+        <q-img alt="" src="../assets/images/user_icon.svg" width="70px" height="70px" class="q-py-md"/>
+      </div>
+      <p class="text-bold">Cookie monster</p>
 
       <q-scroll-area class="col q-pa-md full-width">
         <div v-for="n in 100" :key="n" class="q-py-xs">
@@ -35,7 +51,7 @@ const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
         </div>
         <div class="q-gutter-sm">
           <q-radio keep-color v-model="state" val="active" label="Active" color="teal" />
-          <q-radio keep-color v-model="state" val="away" label="Away" color="blue-10" />
+          <q-radio keep-color v-model="state" val="away" label="DND" color="blue-10" />
           <q-radio keep-color v-model="state" val="offline" label="Offline" color="pink-10" />
         </div>
       </div>
@@ -46,5 +62,4 @@ const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
 </template>
 
 <style scoped>
-
 </style>
