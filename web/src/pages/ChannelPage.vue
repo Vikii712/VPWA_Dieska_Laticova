@@ -2,6 +2,7 @@
   import { ref } from 'vue'
   import { useQuasar } from 'quasar'
   import LeftDrawer from "components/LeftDrawer.vue";
+  import ChatComponent from "components/ChatComponent.vue";
 
   const leftDrawerOpen = ref<boolean>(false)
   const memberListOpen = ref<boolean>(false)
@@ -50,6 +51,8 @@
 
   </q-toolbar>
   <LeftDrawer v-model:DrawerOpen="leftDrawerOpen"/>
+
+  <ChatComponent></ChatComponent>
 </template>
 
 <style scoped>

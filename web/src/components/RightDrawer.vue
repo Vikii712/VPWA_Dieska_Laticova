@@ -2,6 +2,7 @@
 import {ref, computed} from "vue";
 
 const state = ref<string>('offline')
+const notifType = ref<string>('none')
 const props = defineProps<{modelValue: boolean}>()
 const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
 
@@ -12,10 +13,10 @@ const activityBorder = computed(() => {
   else color = '#f06292'
 
   return {
-    border: `3px solid ${color}`,
+    border: `4px solid ${color}`,
     borderRadius: '50%',
     transition: 'border-color 1s ease',
-    display: 'inline-block'
+    zIndex: 1,
   }
 })
 
@@ -29,32 +30,47 @@ const activityBorder = computed(() => {
     overlay
     behavior="mobile"
     elevated
-    class="bg-deep-purple-2"
+    class="bg-deep-purple-2 text-deep-purple-10"
   >
-    <div class="column fit items-center">
-      <div class="q-pa-xs q-ma-md" :style="activityBorder">
-        <q-img alt="" src="../assets/images/user_icon.svg" width="70px" height="70px" class="q-py-md"/>
-      </div>
-      <p class="text-bold">Cookie monster</p>
-
-      <q-scroll-area class="col q-pa-md full-width">
-        <div v-for="n in 100" :key="n" class="q-py-xs">
-          Lorem ipsum dolor sit amet, consectetur adipisicing
-          elit, sed do eiusmod tempor incididunt ut labore et
-          dolore magna aliqua.
+    <div class="column fit">
+      <div class="absolute-top relative-position bg-purple-10 w-full" style="height: 60px; z-index: 0;"></div>
+      <div class="flex flex-column items-center" style="position: relative; z-index: 1;">
+        <div :style="activityBorder" class="q-ma-md rounded-circle flex flex-center">
+          <q-avatar size="70px">
+            <q-img alt="" src="../assets/images/profile_pic.svg"/>
+          </q-avatar>
         </div>
+        <p class="text-bold q-ml-md text-white text-center">Cookie monster</p>
+      </div>
+
+      <q-scroll-area class="col rounded-borders bg-deep-purple-3 q-ma-md q-pa-sm">
+        I like cookies very much.
+        But only as friends.
+
       </q-scroll-area>
 
-      <div>
-        <div class="q-ml-md">
-          <p>State</p>
+      <div class="text-center q-mt-md column items-center">
+        <div class="q-mb-lg" style="width: 250px;">
+          <p class="text-subtitle1 q-ma-none q-mb-xs text-bold">Notifications</p>
+          <div class="row justify-around items-center">
+            <q-radio keep-color v-model="notifType" val="all" label="All" color="teal-7" />
+            <q-radio keep-color v-model="notifType" val="mentioned" label="@ tags" color="blue-7" />
+            <q-radio keep-color v-model="notifType" val="none" label="None" color="pink-7" />
+          </div>
         </div>
-        <div class="q-gutter-sm">
-          <q-radio keep-color v-model="state" val="active" label="Active" color="teal" />
-          <q-radio keep-color v-model="state" val="away" label="DND" color="blue-10" />
-          <q-radio keep-color v-model="state" val="offline" label="Offline" color="pink-10" />
+
+        <div style="width: 250px;">
+          <p class="text-subtitle1 q-ma-none q-mb-xs text-bold">State</p>
+          <div class="row justify-around items-center">
+            <q-radio keep-color v-model="state" val="active" label="Active" color="teal-9" />
+            <q-radio keep-color v-model="state" val="away" label="DND" color="blue-9" />
+            <q-radio keep-color v-model="state" val="offline" label="Offline" color="pink-9" />
+          </div>
         </div>
+
       </div>
+
+
 
       <q-btn to="/register" icon="arrow_back" label="Log-out" color="purple" class="q-ma-md"/>
     </div>
