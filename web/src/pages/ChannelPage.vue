@@ -20,7 +20,7 @@
 </script>
 
 <template>
-  <q-toolbar class="bg-deep-purple-2 text-deep-purple-10">
+  <q-toolbar class="flex bg-deep-purple-2 text-deep-purple-10 fixed" style="z-index: 1">
 
     <q-btn
       dense flat round
@@ -29,15 +29,16 @@
       v-show="$q.screen.width < 768"
     />
 
-    <q-toolbar-title class="flex items-center text-bold text-subtitle1">
+    <div class="row text-bold text-subtitle1">
       <p class="q-ma-none q-mr-sm">Friend's of food Channel</p>
       <p class="q-ma-none ">[private]</p>
-    </q-toolbar-title>
+    </div>
 
     <q-btn
       flat dense
       :icon="memberListOpen ? 'keyboard_arrow_right' : 'group'"
       @click="toggleMemberList"
+      class="justify-end"
     />
 
     <q-drawer
