@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref } from 'vue'
-  import LeftDrawer from "components/LeftDrawer.vue";
   import RightDrawer from "components/RightDrawer.vue";
+  import ChannelPage from "pages/ChannelPage.vue";
 
   const rightDrawerOpen = ref<boolean>(false)
 
@@ -12,26 +12,23 @@
 </script>
 
 <template>
-  <q-layout view="hHr LpR fFf" class="bg-deep-purple-1">
+  <q-layout view="hHh LpR fFf" class="bg-deep-purple-1">
 
-    <q-header elevated class="bg-purple-10 text-deep-purple-1" height-hint="98">
+    <q-header elevated class="bg-purple-10 text-deep-purple-1">
       <q-toolbar>
         <q-toolbar-title class="flex items-center">
-            <img alt=""  src="../assets/images/logo.svg" width="100">
+            <img alt=""  src="../assets/images/logo.svg" width="130" class="q-pa-md">
         </q-toolbar-title>
 
-        <q-btn dense flat round icon="menu" @click="toggleRightDrawer" />
+        <q-btn dense flat round icon="account_circle" @click="toggleRightDrawer" color="deep-purple-2"/>
       </q-toolbar>
 
     </q-header>
 
-    <LeftDrawer />
-
     <RightDrawer v-model="rightDrawerOpen" />
 
-
     <q-page-container>
-      <router-view />
+      <ChannelPage/>
     </q-page-container>
 
   </q-layout>

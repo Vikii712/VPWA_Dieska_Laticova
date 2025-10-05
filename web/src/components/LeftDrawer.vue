@@ -2,60 +2,78 @@
 
 import {ref} from "vue";
 
-const drawer = ref<boolean>(false)
 const miniState = ref<boolean>(true)
+
+const props = defineProps<{DrawerOpen: boolean}>()
+const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
 
 </script>
 
 <template>
   <q-drawer
-    v-model:dark="drawer"
+    :model-value="props.DrawerOpen"
+    @update:model-value="emit('update:DrawerOpen', $event)"
+
     side="left"
-    bordered
     show-if-above
+    :breakpoint="768"
 
     :mini="miniState"
     @mouseenter="miniState = false"
     @mouseleave="miniState = true"
 
-    class="bg-deep-purple-2"
+    class="bg-deep-purple-2 column"
   >
-    <q-scroll-area class="fit text-black">
+
+    <q-item>
+      <q-item-section avatar>
+      </q-item-section>
+
+      <q-item-section class="text-deep-purple-10 text-h6 q-pa-sm">
+        Channel list
+      </q-item-section>
+    </q-item>
+
+
+    <q-scroll-area class="col text-black">
+
       <q-list padding>
-        <q-item active clickable v-ripple>
+
+        <q-item
+          v-for="n in 10"
+          :key="n"
+
+          clickable
+          v-ripple
+        >
           <q-item-section avatar>
             <img alt="" src="../assets/images/user_icon.svg" width="50" />
           </q-item-section>
 
           <q-item-section>
-            Channel 1
+            Channel {{n}}
           </q-item-section>
         </q-item>
 
-        <q-item clickable v-ripple>
-          <q-item-section avatar>
-            <img alt="" src="../assets/images/user_icon.svg" width="50"/>
-          </q-item-section>
 
-          <q-item-section>
-            Channel 2
-          </q-item-section>
-        </q-item>
-
-        <q-item clickable v-ripple>
-          <q-item-section avatar>
-            <img alt="" src="../assets/images/user_icon.svg" width="50"/>
-          </q-item-section>
-
-          <q-item-section>
-            Channel 3
-          </q-item-section>
-        </q-item>
       </q-list>
     </q-scroll-area>
+
+
+    <q-item clickable v-ripple>
+
+      <q-item-section avatar>
+        <q-icon name="add" />
+      </q-item-section>
+
+      <q-item-section>
+        Add Channel
+      </q-item-section>
+
+    </q-item>
+
   </q-drawer>
 </template>
 
 <style scoped>
-
 </style>
