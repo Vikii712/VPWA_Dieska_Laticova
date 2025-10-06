@@ -47,11 +47,11 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
           clickable
           v-ripple
         >
-          <q-item-section avatar>
-            <img alt="" src="../assets/images/user_icon.svg" width="50" />
-          </q-item-section>
+          <q-avatar>
+            <img alt="" src="../assets/images/channel_icon.svg" width="50" />
+          </q-avatar>
 
-          <q-item-section>
+          <q-item-section class="q-pl-sm">
             Channel {{n}}
           </q-item-section>
         </q-item>
