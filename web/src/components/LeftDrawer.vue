@@ -17,25 +17,26 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
     side="left"
     show-if-above
     :breakpoint="768"
+    elevated
 
     :mini="miniState"
     @mouseenter="miniState = false"
     @mouseleave="miniState = true"
 
-    class="bg-deep-purple-2 column"
+    class="bg-deep-purple-7 column"
   >
 
     <q-item>
       <q-item-section avatar>
       </q-item-section>
 
-      <q-item-section class="text-deep-purple-10 text-h6 q-pa-sm">
+      <q-item-section class="text-white text-bold">
         Channel list
       </q-item-section>
     </q-item>
 
 
-    <q-scroll-area class="col text-black">
+    <q-scroll-area class="col text-white">
 
       <q-list padding>
 
