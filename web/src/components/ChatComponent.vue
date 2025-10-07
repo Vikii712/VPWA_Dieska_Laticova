@@ -5,8 +5,7 @@ import user2 from '../assets/images/PieMan.svg'
 
 <template>
   <q-infinite-scroll>
-    <div class="q-px-lg">
-      <q-timeline color="deep-purple-6" layout='dense'>
+      <q-timeline color="deep-purple-6" class="q-px-lg q-pb-xl" layout='dense'>
         <q-timeline-entry
           v-for="i in 10"
           :key="i"
@@ -25,7 +24,6 @@ import user2 from '../assets/images/PieMan.svg'
           <q-separator class="q-mb-0 q-mt-sm sep rounded-borders"/>
         </q-timeline-entry>
       </q-timeline>
-    </div>
   </q-infinite-scroll>
 </template>
 <style scoped>

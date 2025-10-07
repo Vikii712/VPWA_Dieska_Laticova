@@ -6,19 +6,27 @@ const message = ref('')
 </script>
 
 <template>
-  <q-layout view="hHh LpR fFf" class="bg-dark">
     <ChatComponent/>
 
-    <q-form class=" q-gutter-md">
-      <q-input
-        v-model="message"
-        outlined
-        bg-color="grey-9"
-        color="grey-9"
-        class="text-white"
-      />
-    </q-form>
-  </q-layout>
+    <div class="fixed-bottom bg-grey-9 q-pa-sm">
+      <q-form class="q-gutter-md q-mx-sm-xl q-py-none">
+        <q-input
+          rounded
+          v-model="message"
+          outlined
+          color="grey-8"
+          bg-color="grey-8"
+          class="text-white"
+          :input-style="{ color: 'white' }">
+          <template v-slot:append>
+            <q-btn flat class="q-px-sm">
+              <q-icon name="send" color="deep-purple-2" />
+            </q-btn>
+          </template>
+        </q-input>
+
+      </q-form>
+    </div>
 </template>
 
 <style scoped>

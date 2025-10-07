@@ -27,7 +27,7 @@
 </script>
 
 <template>
-  <q-layout view="hHh LpR fFf" class="bg-deep-purple-1">
+  <q-layout view="hHh LpR fFf" class="bg-dark">
 
     <q-header elevated class="bg-purple-10 text-deep-purple-1 shadow-md">
       <q-toolbar>
@@ -47,8 +47,8 @@
         />
 
         <q-toolbar-title class="row text-bold text-subtitle1">
-          <p class="q-ma-none q-ml-xl">Friend's of food Channel</p>
-          <p class="q-ml-sm q-my-none">[private]</p>
+          <p class="q-ma-none q-ml-sm-xl q-mr-sm">Friends of food channel, we post really long messages that do not make sense here</p>
+          <p class="q-my-none">[private]</p>
         </q-toolbar-title>
 
         <q-btn
@@ -66,7 +66,7 @@
 
     <RightDrawer v-model="rightDrawerOpen" />
 
-    <q-page-container class="bg-dark q-py-xl">
+    <q-page-container class="bg-dark q-pt-xl">
       <ChannelPage/>
     </q-page-container>
 
