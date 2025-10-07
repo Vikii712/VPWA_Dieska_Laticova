@@ -43,7 +43,7 @@
           dense flat round
           icon="list"
           @click="toggleLeftDrawer"
-          v-show="$q.screen.lt.sm"
+          v-show="$q.screen.lt.md"
         />
 
         <q-toolbar-title class="row text-bold text-subtitle1">

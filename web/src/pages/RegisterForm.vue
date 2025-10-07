@@ -4,7 +4,9 @@ import { ref } from "vue";
 
 const $q = useQuasar();
 
+const nick = ref<string | null>(null);
 const name = ref<string | null>(null);
+const lastName = ref<string | null>(null);
 const email = ref<string | null>(null);
 const password = ref<string | null>(null);
 
@@ -40,12 +42,34 @@ function onReset(): void {
       >
         <q-input
             outlined
-            v-model="name"
+            v-model="nick"
             label="Zadaj NickName*"
             bg-color="deep-purple-1"
             lazy-rules
             :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
         />
+        <div class="row q-col">
+          <div class="col-6">
+            <q-input
+              outlined
+              v-model="name"
+              label="Zadaj Meno*"
+              bg-color="deep-purple-1"
+              lazy-rules
+              :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
+            />
+          </div>
+          <div class="col-6">
+            <q-input
+              outlined
+              v-model="lastName"
+              label="Zadaj Priezvisko*"
+              bg-color="deep-purple-1"
+              lazy-rules
+              :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
+            />
+          </div>
+        </div>
         <q-input
             outlined
             v-model="email"

@@ -32,13 +32,13 @@
           class="q-pl-md"
         >
           <q-avatar>
+            <q-badge floating class="q-ml-lg" v-if="n === 3 || n === 10">DND</q-badge>
+            <q-badge floating class="q-ml-lg" color="red" v-else-if="n === 5 || n === 6">Offline</q-badge>
+            <q-badge floating class="q-ml-lg"  color="teal" v-else>Active</q-badge>
             <img alt="" src="../assets/images/user_icon.svg" width="40" />
           </q-avatar>
 
           <q-item-section class="q-pl-md text-white">
-            <q-badge floating class="q-mr-lg q-mt-sm" v-if="n === 3 || n === 10">DND</q-badge>
-            <q-badge floating class="q-mr-lg q-mt-sm" color="red" v-else-if="n === 5 || n === 6">Offline</q-badge>
-            <q-badge floating class="q-mr-lg q-mt-sm"  color="teal" v-else>Active</q-badge>
             User {{n}}
           </q-item-section>
         </q-item>
