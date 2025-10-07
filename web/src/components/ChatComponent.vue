@@ -23,6 +23,22 @@ import user2 from '../assets/images/PieMan.svg'
           </div>
           <q-separator class="q-mb-0 q-mt-sm sep rounded-borders"/>
         </q-timeline-entry>
+
+        <q-timeline-entry
+          color="blue-grey"
+          :avatar=user2
+          class="text-white">
+          <template #title>
+            <span>
+              Raspberry Pi
+              <q-tooltip>
+                This is what they are typing...
+              </q-tooltip>
+            </span>
+          </template>
+          <q-spinner-dots size="2rem" />
+        </q-timeline-entry>
+
       </q-timeline>
   </q-infinite-scroll>
 </template>

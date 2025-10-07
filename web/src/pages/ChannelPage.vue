@@ -9,14 +9,15 @@ const message = ref('')
     <ChatComponent/>
 
     <div class="fixed-bottom bg-grey-9 q-pa-sm">
-      <q-form class="q-gutter-md q-mx-sm-xl q-py-none">
+      <q-form class="q-gutter-md q-ml-md-xl q-py-none">
         <q-input
           rounded
           v-model="message"
           outlined
           color="grey-8"
           bg-color="grey-8"
-          class="text-white"
+          class="text-white "
+          input-class="q-pl-md"
           :input-style="{ color: 'white' }">
           <template v-slot:append>
             <q-btn flat class="q-px-sm">

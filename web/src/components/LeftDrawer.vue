@@ -16,7 +16,6 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
 
     side="left"
     show-if-above
-    :breakpoint="768"
     elevated
 
     :mini="miniState"

@@ -43,11 +43,11 @@
           dense flat round
           icon="list"
           @click="toggleLeftDrawer"
-          v-show="$q.screen.width < 768"
+          v-show="$q.screen.lt.sm"
         />
 
         <q-toolbar-title class="row text-bold text-subtitle1">
-          <p class="q-ma-none q-ml-sm-xl q-mr-sm">Friends of food channel, we post really long messages that do not make sense here</p>
+          <p class="q-ma-none q-ml-md-xl q-mr-sm">Friends of food channel, we post really long messages that do not make sense here</p>
           <p class="q-my-none">[private]</p>
         </q-toolbar-title>
 
