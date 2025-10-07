@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import user1 from '../assets/images/profile_pic.svg'
-import user2 from '../assets/images/user_icon.svg'
+import user2 from '../assets/images/PieMan.svg'
 </script>
 
 <template>

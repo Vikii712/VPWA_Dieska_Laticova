@@ -4,6 +4,7 @@
   import LeftDrawer from "components/LeftDrawer.vue"
   import ChannelPage from "pages/ChannelPage.vue";
   import {useQuasar} from "quasar";
+  import MemberList from "components/MemberList.vue";
 
   const rightDrawerOpen = ref<boolean>(false)
   const $q = useQuasar()
@@ -59,14 +60,7 @@
 
       <LeftDrawer v-model:DrawerOpen="leftDrawerOpen" />
 
-      <q-drawer
-        v-model="memberListOpen"
-        side="right"
-        overlay
-        elevated
-        class="bg-deep-purple-7"
-      >
-      </q-drawer>
+      <MemberList v-model:DrawerOpen="memberListOpen" />
 
     </q-header>
 

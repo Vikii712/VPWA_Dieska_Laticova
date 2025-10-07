@@ -48,6 +48,8 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
           v-ripple
         >
           <q-avatar>
+            <q-badge floating color="red" v-if="n === 1">invite</q-badge>
+            <q-badge floating  color="teal"  v-if="n === 3 || n === 7">new</q-badge>
             <img alt="" src="../assets/images/channel_icon.svg" width="50" />
           </q-avatar>
 
