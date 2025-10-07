@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import {ref} from "vue";
+import AddChannel from "components/AddChannel.vue";
 
 const miniState = ref<boolean>(true)
 
@@ -62,17 +63,7 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
     </q-scroll-area>
 
 
-    <q-item clickable v-ripple>
-
-      <q-item-section avatar>
-        <q-icon name="add" />
-      </q-item-section>
-
-      <q-item-section>
-        Add Channel
-      </q-item-section>
-
-    </q-item>
+    <AddChannel />
 
   </q-drawer>
 </template>
