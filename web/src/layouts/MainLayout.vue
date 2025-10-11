@@ -47,7 +47,7 @@
         />
 
         <q-toolbar-title class="row text-bold text-subtitle1">
-          <p class="q-ma-none q-ml-md-xl q-mr-sm">Friends of food channel, we post really long messages that do not make sense here</p>
+          <p class="q-ma-none q-ml-md-xl q-mr-sm">We post really long messages that don't make sense</p>
           <p class="q-my-none">[private]</p>
         </q-toolbar-title>
 

@@ -24,17 +24,20 @@
 
 
   <q-dialog v-model="showDialog" persistent>
-    <q-card class="q-pa-md bg-deep-purple-2" style="min-width: 350px">
+    <q-card class="q-pa-md bg-deep-purple-2" style="min-width: 350px;">
       <q-card-section class="text-h6">
         Vytvoriť nový kanál
       </q-card-section>
       <q-card-section>
         <q-input
+          autogrow
+          maxlength="50"
           outlined
           v-model="channelName"
           label="Názov kanála"
           dense
           autofocus
+          :input-style="{maxHeight: '42px'}"
         />
 
         <div class="q-mt-md">

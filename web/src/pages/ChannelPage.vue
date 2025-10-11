@@ -11,16 +11,18 @@ const message = ref('')
     <div class="fixed-bottom bg-grey-9 q-pa-sm">
       <q-form class="q-gutter-md q-ml-md-xl q-py-none">
         <q-input
-          rounded
+          type="textarea"
+          autogrow
+          dense
           v-model="message"
           outlined
-          color="grey-8"
-          bg-color="grey-8"
-          class="text-white "
-          input-class="q-pl-md"
-          :input-style="{ color: 'white' }">
-          <template v-slot:append>
-            <q-btn flat class="q-px-sm">
+          color="black"
+          bg-color="grey-9"
+          class="text-white"
+          input-class="q-pl-lg"
+          :input-style="{ maxHeight: '200px', color: 'white'}">
+          <template v-slot:prepend>
+            <q-btn flat class="q-pl-sm q-pb-sm absolute-bottom-left">
               <q-icon name="send" color="deep-purple-2" />
             </q-btn>
           </template>

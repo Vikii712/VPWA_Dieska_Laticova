@@ -2,6 +2,7 @@
 
 import {ref} from "vue";
 import AddChannel from "components/AddChannel.vue";
+import ExitChannel from "components/ExitChannel.vue";
 
 const miniState = ref<boolean>(true)
 
@@ -54,8 +55,10 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
           </q-avatar>
 
           <q-item-section class="q-pl-sm">
-            Channel {{n}}
+            We post really long messages that don't make sense {{n}}
           </q-item-section>
+
+          <ExitChannel/>
         </q-item>
 
 
