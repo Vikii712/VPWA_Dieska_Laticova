@@ -45,6 +45,7 @@ function onReset(): void {
             v-model="nick"
             label="Zadaj NickName*"
             bg-color="deep-purple-1"
+            maxlength="22"
             lazy-rules
             :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
         />
@@ -56,6 +57,7 @@ function onReset(): void {
               label="Zadaj Meno*"
               bg-color="deep-purple-1"
               lazy-rules
+              maxlength="25"
               :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
             />
           </div>
@@ -65,6 +67,7 @@ function onReset(): void {
               v-model="lastName"
               label="Zadaj Priezvisko*"
               bg-color="deep-purple-1"
+              maxlength="30"
               lazy-rules
               :rules="[val => val && val.length > 0 || 'Zadaj údaje']"
             />

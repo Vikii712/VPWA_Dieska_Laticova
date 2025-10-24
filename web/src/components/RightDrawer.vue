@@ -5,6 +5,13 @@ const state = ref<string>('offline')
 const notifType = ref<string>('none')
 const props = defineProps<{modelValue: boolean}>()
 const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
+const name = ref('My name is sooo long 1')
+
+function minLengthRule(value: string) {
+  if (!value || value.trim().length === 0) return 'Value is required'
+  if (value.length < 6) return 'Minimum 6 characters required'
+  return true
+}
 
 const activityBorder = computed(() => {
   let color = 'pink-10'
@@ -35,18 +42,30 @@ const activityBorder = computed(() => {
     <div class="column fit">
       <div class="absolute-top relative-position bg-purple-10 w-full" style="height: 60px; z-index: 0;"></div>
       <div class="flex flex-column items-center" style="position: relative; z-index: 1;">
-        <div :style="activityBorder" class="q-ma-md rounded-circle flex flex-center">
-          <q-avatar size="70px">
+        <div :style="activityBorder" class="q-my-md q-mx-sm rounded-circle flex flex-center">
+          <q-avatar size="60px">
             <q-img alt="" src="../assets/images/profile_pic.svg"/>
           </q-avatar>
         </div>
-        <p class="text-bold q-ml-md text-white text-center">Cookie monster</p>
+        <p class="text-bold q-mr-none text-white text-center text-italic">
+          <q-input
+            v-model="name"
+            maxlength="22"
+            dense
+            borderless
+            input-class="text-white text-italic text-center"
+            lazy-rules
+            :rules="[minLengthRule]"
+            class="q-py-xs q-px-none q-ma-none"
+          />
+        </p>
       </div>
 
       <q-scroll-area class="col rounded-borders bg-deep-purple-3 q-ma-md q-pa-sm">
-        I like cookies very much.
-        But only as friends.
-
+        <div contenteditable="true" style="outline: none;">
+          I like cookies very much.
+          But only as friends.
+        </div>
       </q-scroll-area>
 
       <div class="text-center q-mt-md column items-center">

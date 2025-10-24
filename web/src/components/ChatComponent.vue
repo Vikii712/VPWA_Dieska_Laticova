@@ -31,9 +31,6 @@ import user2 from '../assets/images/PieMan.svg'
           <template #title>
             <span>
               Raspberry Pi
-              <q-tooltip class="bg-grey-9 text-subtitle2">
-               My jokes are crispier than yours
-              </q-tooltip>
             </span>
           </template>
           <q-spinner-dots size="2rem" />
