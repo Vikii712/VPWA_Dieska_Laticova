@@ -5,13 +5,6 @@ const state = ref<string>('offline')
 const notifType = ref<string>('none')
 const props = defineProps<{modelValue: boolean}>()
 const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
-const name = ref('My name is sooo long 1')
-
-function minLengthRule(value: string) {
-  if (!value || value.trim().length === 0) return 'Value is required'
-  if (value.length < 6) return 'Minimum 6 characters required'
-  return true
-}
 
 const activityBorder = computed(() => {
   let color = 'pink-10'
@@ -48,17 +41,13 @@ const activityBorder = computed(() => {
           </q-avatar>
         </div>
         <p class="text-bold q-mr-none text-white text-center text-italic">
-          <q-input
-            v-model="name"
-            maxlength="22"
-            dense
-            borderless
-            input-class="text-white text-italic text-center"
-            lazy-rules
-            :rules="[minLengthRule]"
-            class="q-py-xs q-px-none q-ma-none"
-          />
+          24_character_username_XX
         </p>
+      </div>
+
+      <div class="q-mx-md">
+        <p class="q-mb-none">Name: Alexandra Donatella</p>
+        <p class="q-mb-none">Surname: Novakovska-Kralikova</p>
       </div>
 
       <q-scroll-area class="col rounded-borders bg-deep-purple-3 q-ma-md q-pa-sm">

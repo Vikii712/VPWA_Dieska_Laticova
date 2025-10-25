@@ -94,10 +94,10 @@ function onReset(): void {
         val => val.length >= 8 || 'Prosím, zadajte 8 alebo viac znakov']"
         />
 
-        <div class="grid row justify-between">
+        <div class="grid row justify-between items-center">
           <div class="">
             <q-btn label="Register" type="submit" color="accent" />
-            <q-btn label="Reset" type="reset" color="accent" flat class="q-ml-sm"/>
+            <q-btn label="Reset" type="reset" color="accent" flat class="q-pa-sm q-pl-md"/>
           </div>
           <div class="justify-end">
             <q-btn to="/login" label="Login" color="purple"/>

@@ -34,7 +34,7 @@
       <q-form
           @submit = "onSubmit"
           @reset = "onReset"
-          class="q-gutter-md"
+
 
       >
         <q-input
@@ -43,6 +43,7 @@
             type="email"
             label="Zadaj Email*"
             bg-color="deep-purple-1"
+            class=""
             lazy-rules
             :rules="[val => !!val || 'Zadanie emailu je povinné',
         (val, rules) => rules.email(val) || 'Prosím, zadajte validný email']"
@@ -58,12 +59,12 @@
         val => val.length >= 8 || 'Prosím, zadajte 8 alebo viac znakov']"
         />
 
-        <div class="grid row justify-between">
-          <div class="">
+        <div class="grid row justify-between  items-center">
+          <div class="q-pt-md">
             <q-btn to="/main" label="Log-in" type="submit" color="accent" />
-            <q-btn label="Reset" type="reset" color="accent" flat class="q-ml-sm"/>
+            <q-btn label="Reset" type="reset" color="accent" flat class="q-pa-sm q-pl-md"/>
           </div>
-          <div class="justify-end">
+          <div class="justify-end q-pt-md">
             <q-btn to="/register" label="Register" color="purple"/>
           </div>
         </div>

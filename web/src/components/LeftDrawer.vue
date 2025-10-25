@@ -9,6 +9,10 @@ const miniState = ref<boolean>(true)
 const props = defineProps<{DrawerOpen: boolean}>()
 const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
 
+const truncate = (str: string) => {
+  return str.length > 15 ? str.slice(0, 24) + "..." : str;
+};
+
 </script>
 
 <template>
@@ -55,7 +59,7 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
           </q-avatar>
 
           <q-item-section class="q-pl-sm">
-            We post really long messages that don't make sense {{n}}
+             {{truncate("We post really long messages that don't make sense")}}
           </q-item-section>
 
           <ExitChannel/>

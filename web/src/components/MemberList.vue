@@ -29,26 +29,22 @@
           v-for="n in 15"
           :key="n"
           clickable
-          class="q-pl-md"
+          class="q-pl-md q-pr-none"
         >
           <q-avatar>
             <q-badge floating class="q-ml-lg" v-if="n > 6 && n < 10">DND</q-badge>
             <q-badge floating class="q-ml-lg" color="red" v-else-if="n >= 10">Offline</q-badge>
-            <q-badge floating class="q-ml-lg"  color="teal" v-else-if="n <= 6 && n > 3">Active</q-badge>
-            <q-badge floating class="q-ml-lg"  color="green-10" v-else>Typing</q-badge>
+            <q-badge floating class="q-ml-lg"  color="teal" v-else >Active</q-badge>
             <img alt="" src="../assets/images/user_icon.svg" width="40" />
           </q-avatar>
 
-          <q-item-section class="q-pl-md text-white">
-            My name is sooo long {{n}}
-            <q-tooltip class="bg-grey-9 text-subtitle2">
-              <q-infinite-scroll>
-                Typing: My jokes are crispier than yours
-              </q-infinite-scroll>
-            </q-tooltip>
+          <q-item-section v-if="n > 6 && n < 10" class="q-pl-md text-white">
+            XXXXXXXXXXXXXXXXXXXXXXXX
+          </q-item-section>
+          <q-item-section v-else class="q-pl-md q-pr-none text-white">
+            24_character_username_XX
           </q-item-section>
         </q-item>
-
 
       </q-list>
     </q-scroll-area>

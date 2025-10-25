@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import user1 from '../assets/images/profile_pic.svg'
 import user2 from '../assets/images/PieMan.svg'
+
+import { ref } from 'vue'
+
+const hideTyping = ref(true)
+
+function toggleTyping() {
+  hideTyping.value = !hideTyping.value
+}
 </script>
 
 <template>
@@ -16,7 +24,7 @@ import user2 from '../assets/images/PieMan.svg'
           class="text-white"
         >
           <div
-            class="q-pa-sm text-white"
+            class="q-pa-sm text-white text-body1"
             :class="i % 2 === 0 ? 'bg-teal-10' : 'bg-blue-grey-10'"
           >
             {{ i % 2 === 0 ? 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.' : '"Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.' }}
@@ -33,7 +41,14 @@ import user2 from '../assets/images/PieMan.svg'
               Raspberry Pi
             </span>
           </template>
-          <q-spinner-dots size="2rem" />
+          <div class="q-pa-sm text-white bg-grey-9 text-body1"
+            :class="{hidden: hideTyping}"
+          >
+            This is the secret message i'm typing and you are not supposed to spy on me! That is not what friends dooo do doo
+          </div>
+          <q-spinner-dots size="2rem"
+            @click="toggleTyping"
+          />
         </q-timeline-entry>
 
       </q-timeline>
