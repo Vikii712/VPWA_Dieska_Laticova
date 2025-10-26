@@ -46,9 +46,11 @@
           v-show="$q.screen.lt.md"
         />
 
-        <q-toolbar-title class="row text-bold text-subtitle1">
-          <p class="q-ma-none q-ml-md-xl q-mr-sm">We post really long messages that don't make sense</p>
-          <p class="q-my-none">[private]</p>
+        <q-toolbar-title class="row items-center text-bold text-subtitle1">
+          <q-item-label lines="1" class=" q-ml-md-xl q-mr-sm">
+            We post really long messages that don't make sense
+          </q-item-label>
+          <div>[private]</div>
         </q-toolbar-title>
 
         <q-btn

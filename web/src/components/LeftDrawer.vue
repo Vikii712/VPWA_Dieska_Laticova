@@ -52,7 +52,7 @@ const truncate = (str: string) => {
           clickable
           v-ripple
         >
-          <q-avatar>
+          <q-avatar class="q-pl-xs">
             <q-badge floating color="red" v-if="n === 1">invite</q-badge>
             <q-badge floating  color="teal"  v-if="n === 3 || n === 7">new</q-badge>
             <img alt="" src="../assets/images/channel_icon.svg" width="50" />

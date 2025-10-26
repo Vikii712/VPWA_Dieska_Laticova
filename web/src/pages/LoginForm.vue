@@ -1,8 +1,10 @@
 <script setup lang="ts">
   import { useQuasar } from "quasar";
   import { ref } from "vue";
+  import { useRouter } from "vue-router";
 
   const $q = useQuasar();
+  const router = useRouter();
 
   const email = ref<string | null>(null);
   const password = ref<string | null>(null);
@@ -14,6 +16,8 @@
       icon: "cloud-done",
       message: "Prihlásený",
     });
+
+    void router.push("/main");
   }
 
   function onReset(): void {
@@ -61,7 +65,7 @@
 
         <div class="grid row justify-between  items-center">
           <div class="q-pt-md">
-            <q-btn to="/main" label="Log-in" type="submit" color="accent" />
+            <q-btn label="Log-in" type="submit" color="accent" />
             <q-btn label="Reset" type="reset" color="accent" flat class="q-pa-sm q-pl-md"/>
           </div>
           <div class="justify-end q-pt-md">
@@ -72,6 +76,3 @@
     </div>
   </div>
 </template>
-
-<style scoped>
-</style>
