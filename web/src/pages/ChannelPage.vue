@@ -20,9 +20,9 @@ const message = ref('')
           bg-color="grey-9"
           class="text-white"
           input-class="q-pl-lg"
-          :input-style="{ maxHeight: '200px', color: 'white'}">
-          <template v-slot:prepend>
-            <q-btn flat class="q-pl-sm q-pb-sm absolute-bottom-left">
+          :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}">
+          <template v-slot:append>
+            <q-btn flat class="q-pl-sm q-pb-sm absolute-bottom-right">
               <q-icon name="send" color="deep-purple-2" />
             </q-btn>
           </template>

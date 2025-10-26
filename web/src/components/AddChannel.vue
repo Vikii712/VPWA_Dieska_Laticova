@@ -24,9 +24,9 @@
 
 
   <q-dialog v-model="showDialog" persistent>
-    <q-card class="q-pa-md bg-deep-purple-2" style="min-width: 350px;">
+    <q-card class="q-pa-md bg-deep-purple-2" style="width: 350px;">
       <q-card-section class="text-h6">
-        Vytvoriť nový kanál
+        Create new channel
       </q-card-section>
       <q-card-section>
         <q-input
@@ -34,7 +34,7 @@
           maxlength="50"
           outlined
           v-model="channelName"
-          label="Názov kanála"
+          label="Channel name*"
           dense
           autofocus
           :input-style="{maxHeight: '42px'}"
@@ -55,8 +55,8 @@
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn flat label="Zrušiť" color="purple" v-close-popup />
-        <q-btn label="Vytvoriť" color="purple" @click="closeDialog" :disable="!channelName.trim()"/>
+        <q-btn flat label="Cancel" color="purple" v-close-popup />
+        <q-btn label="Create" color="purple" @click="closeDialog" :disable="!channelName.trim()"/>
       </q-card-actions>
     </q-card>
   </q-dialog>

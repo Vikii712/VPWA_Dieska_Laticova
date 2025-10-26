@@ -11,10 +11,9 @@
 
   function onSubmit(): void {
     $q.notify({
-      color: "green-4",
+      color: "green-8",
       textColor: "white",
-      icon: "cloud-done",
-      message: "Prihlásený",
+      message: "Logged-in",
     });
 
     void router.push("/main");
@@ -45,22 +44,22 @@
             outlined
             v-model="email"
             type="email"
-            label="Zadaj Email*"
+            label="Enter your email*"
             bg-color="deep-purple-1"
             class=""
             lazy-rules
-            :rules="[val => !!val || 'Zadanie emailu je povinné',
-        (val, rules) => rules.email(val) || 'Prosím, zadajte validný email']"
+            :rules="[val => !!val || 'Entering email is required',
+        (val, rules) => rules.email(val) || 'Please, enter a valid email']"
         />
         <q-input
             outlined
             v-model="password"
             type="password"
-            label="Zadaj Heslo*"
+            label="Enter your password*"
             bg-color="deep-purple-1"
             lazy-rules
-            :rules="[val => !!val || 'Prosím, zadajte heslo',
-        val => val.length >= 8 || 'Prosím, zadajte 8 alebo viac znakov']"
+            :rules="[val => !!val || 'Please, enter your password',
+        val => val.length >= 8 || 'Please, enter 8 or more characters']"
         />
 
         <div class="grid row justify-between  items-center">
