@@ -70,7 +70,7 @@ const activityBorder = computed(() => {
         <div style="width: 250px;">
           <p class="text-subtitle1 q-ma-none q-mb-xs text-bold">State</p>
           <div class="row justify-around items-center">
-            <q-radio keep-color v-model="state" val="active" label="Active" color="teal-9" />
+            <q-radio keep-color v-model="state" val="active" label="Online" color="teal-9" />
             <q-radio keep-color v-model="state" val="away" label="DND" color="blue-9" />
             <q-radio keep-color v-model="state" val="offline" label="Offline" color="pink-9" />
           </div>

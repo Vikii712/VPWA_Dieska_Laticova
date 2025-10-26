@@ -56,7 +56,7 @@
 
       <q-card-actions align="right">
         <q-btn flat label="Zrušiť" color="purple" v-close-popup />
-        <q-btn label="Vytvoriť" color="purple" @click="closeDialog" />
+        <q-btn label="Vytvoriť" color="purple" @click="closeDialog" :disable="!channelName.trim()"/>
       </q-card-actions>
     </q-card>
   </q-dialog>
