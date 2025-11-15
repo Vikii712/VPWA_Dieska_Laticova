@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import {ref, computed} from "vue";
+import {useAuthStore} from "stores/auth";
+import {useRouter} from "vue-router";
+import { onMounted } from 'vue'
+
+const auth = useAuthStore();
+const router = useRouter();
 
 const state = ref<string>('offline')
 const notifType = ref<string>('none')
@@ -19,6 +25,16 @@ const activityBorder = computed(() => {
     zIndex: 1,
   }
 })
+
+onMounted(async () => {
+  await auth.me()
+})
+
+async function logout() {
+  await auth.logout()
+
+  void router.push('/login')
+}
 
 </script>
 
@@ -41,13 +57,15 @@ const activityBorder = computed(() => {
           </q-avatar>
         </div>
         <p class="text-bold q-mr-none text-white text-center text-italic">
-          24_character_username_XX
+          {{auth.user?.nick ?? 'x'}}
         </p>
       </div>
 
       <div class="q-mx-md">
         <p class="q-mb-none">Name: Alexandra Donatella</p>
         <p class="q-mb-none">Surname: Novakovska-Kralikova</p>
+        <p class="q-mb-none">eMail: {{auth.user?.email ?? 'x'}}</p>
+
       </div>
 
       <q-scroll-area class="col rounded-borders bg-deep-purple-3 q-ma-md q-pa-sm">
@@ -80,7 +98,7 @@ const activityBorder = computed(() => {
 
 
 
-      <q-btn to="/register" icon="arrow_back" label="Log-out" color="purple" class="q-ma-md"/>
+      <q-btn @click="logout"  icon="arrow_back" label="Log-out" color="purple" class="q-ma-md"/>
     </div>
   </q-drawer>
 </template>

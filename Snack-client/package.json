@@ -1,11 +1,11 @@
 {
-  "name": "web",
+  "name": "snack-client",
   "version": "0.0.1",
-  "description": "A Quasar Project",
+  "description": "VPWA projekt",
   "productName": "Snack",
   "author": "Viktória Latičová <xlaticova@stuba.sk>",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
     "lint": "eslint -c ./eslint.config.js \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
@@ -15,29 +15,43 @@
     "postinstall": "quasar prepare"
   },
   "dependencies": {
+    "axios": "^1.2.1",
+    "pinia": "^3.0.1",
     "@quasar/extras": "^1.16.4",
+    "core-js": "^3.6.5",
     "quasar": "^2.16.0",
-    "vue": "3.5.20",
-    "vue-router": "^4.0.12"
+    "vue": "^3.5.22",
+    "vue-router": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "eslint": "^9.14.0",
     "eslint-plugin-vue": "^10.4.0",
-    "globals": "^16.4.0",
-    "vue-tsc": "^3.0.7",
+    "eslint-webpack-plugin": "^4.2.0",
     "@vue/eslint-config-typescript": "^14.4.0",
-    "vite-plugin-checker": "^0.10.3",
+    "globals": "^16.4.0",
     "vue-eslint-parser": "^10.2.0",
     "@vue/eslint-config-prettier": "^10.1.0",
     "prettier": "^3.3.3",
     "@types/node": "^20.5.9",
-    "@quasar/app-vite": "^2.1.0",
+    "@quasar/app-webpack": "^4.1.0",
     "autoprefixer": "^10.4.2",
+    "ts-loader": "^9.4.2",
     "typescript": "^5.9.2"
   },
+  "browserslist": [
+    "last 10 Chrome versions",
+    "last 10 Firefox versions",
+    "last 4 Edge versions",
+    "last 7 Safari versions",
+    "last 8 Android versions",
+    "last 8 ChromeAndroid versions",
+    "last 8 FirefoxAndroid versions",
+    "last 10 iOS versions",
+    "last 5 Opera versions"
+  ],
   "engines": {
-    "node": "^28 || ^26 || ^24 || ^22 || ^20",
+    "node": "^28 || ^26 || ^24 || ^22 || ^20 || ^18",
     "npm": ">= 6.13.4",
     "yarn": ">= 1.21.1"
   }

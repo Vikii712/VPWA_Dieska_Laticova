@@ -1,6 +1,6 @@
-# Snack (web)
+# Snack (snack-client)
 
-A Quasar Project
+VPWA projekt
 
 ## Install the dependencies
 
@@ -40,4 +40,4 @@ quasar build
 
 ### Customize the configuration
 
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js).

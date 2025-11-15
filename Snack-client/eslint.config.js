@@ -1,7 +1,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import pluginVue from 'eslint-plugin-vue';
-import pluginQuasar from '@quasar/app-vite/eslint';
+import pluginQuasar from '@quasar/app-webpack/eslint';
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
 import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting';
 
@@ -35,6 +35,7 @@ export default defineConfigWithVueTs(
    */
   pluginVue.configs['flat/essential'],
 
+  // this rule needs to be above the vueTsEslintConfig to avoid error: 'You have used a rule which requires type information, but don't have parserOptions set to generate type information for this file.'
   {
     files: ['**/*.ts', '**/*.vue'],
     rules: {
