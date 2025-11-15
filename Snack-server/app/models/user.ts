@@ -1,9 +1,14 @@
 import { DateTime } from 'luxon'
 import hash from '@adonisjs/core/services/hash'
 import { compose } from '@adonisjs/core/helpers'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, hasMany, manyToMany } from '@adonisjs/lucid/orm'
+import type { HasMany, ManyToMany} from '@adonisjs/lucid/types/relations'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import {DbAccessTokensProvider} from "@adonisjs/auth/access_tokens";
+import Message from "../models/message.js"
+import Channel from "../models/channel.js"
+import Notification from "../models/notification.js";
+
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -28,6 +33,24 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @column({ serializeAs: null })
   declare password: string
+
+  @hasMany(() => Notification, {
+    foreignKey: 'userId',
+  })
+  declare notifications: HasMany<typeof Notification>
+
+  @hasMany(() => Message, {
+    foreignKey: 'createdBy',
+  })
+  declare sentMessages: HasMany<typeof Message>
+
+  @manyToMany(() => Channel, {
+    pivotTable: 'channel_users',
+    pivotForeignKey: 'user_id',
+    pivotRelatedForeignKey: 'channel_id',
+    pivotTimestamps: true,
+  })
+  declare channels: ManyToMany<typeof Channel>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
