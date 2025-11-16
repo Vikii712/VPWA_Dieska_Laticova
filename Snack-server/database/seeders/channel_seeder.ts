@@ -18,7 +18,7 @@ export default class extends BaseSeeder {
         nick: 'Vikinka',
         name: 'Viktória',
         lastName: 'Latičová',
-        email: 'viki.laticova@gmail.com',
+        email: 'viki@gmail.com',
         password: 'laticova',
       },
       {

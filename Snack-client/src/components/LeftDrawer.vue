@@ -1,15 +1,19 @@
 <script setup lang="ts">
 
-import {ref} from "vue";
+import {ref, onMounted} from "vue";
 import AddChannel from "components/AddChannel.vue";
 import ExitChannel from "components/ExitChannel.vue";
-import JoinChannel from "components/JoinChannel.vue";
+import {useChatStore} from "stores/chat";
 
+const chat = useChatStore()
 const miniState = ref<boolean>(true)
 
 const props = defineProps<{DrawerOpen: boolean}>()
 const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
 
+onMounted(async () => {
+  await chat.fetchChannels()
+})
 </script>
 
 <template>
@@ -43,8 +47,8 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
       <q-list padding>
 
         <q-item
-          v-for="n in 10"
-          :key="n"
+          v-for="channel in chat.channels"
+          :key="channel.id"
 
           clickable
           v-ripple
@@ -57,16 +61,13 @@ const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
 
 
           <q-item-section class="q-pl-md text-body2">
-            <q-item-label v-if="n === 2 || n === 4">
-              We post really long messages that don't make sense
-            </q-item-label>
-            <q-item-label v-else>
-              Channel {{n}}
+            <q-item-label>
+              {{channel.name}}
             </q-item-label>
           </q-item-section>
 
-          <ExitChannel v-if="n > 1" :n="n"/>
-          <JoinChannel v-else :name="'Channel ' + n"/>
+          <ExitChannel :n="channel.id"/>
+         <!-- <JoinChannel v-else :name="'Channel ' + n"/> -->
         </q-item>
 
 

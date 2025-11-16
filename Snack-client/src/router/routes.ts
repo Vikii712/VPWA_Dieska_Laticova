@@ -22,6 +22,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/main',
     component: () => import('layouts/MainLayout.vue'),
+    meta : {requiresAuth: true},
   },
 
 
