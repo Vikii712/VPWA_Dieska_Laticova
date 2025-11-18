@@ -16,3 +16,4 @@ router.delete('/logout', [AuthController, 'logout']).as('auth.logout').use(middl
 router.get('/me', [AuthController, 'me']).as('auth.me').use(middleware.auth())
 
 router.get('/channels', [ChannelsController, 'getChannels']).use(middleware.auth())
+router.get('/channels/:id/messages', [ChannelsController, 'getChannelMessages']).as('messages.index').use(middleware.auth())
