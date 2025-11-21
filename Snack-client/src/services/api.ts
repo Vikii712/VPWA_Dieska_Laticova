@@ -4,11 +4,12 @@ import { useAuthStore } from 'stores/auth'
 
 /* Funkcia api */
 
-export async function api(method: string, url: string, payload?: unknown) {
+export async function api<T>(method: string, url: string, payload?: unknown) : Promise<T> {
   const auth = useAuthStore()
 
   const response = await fetch(`http://localhost:3333${url}`, {
     method,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${auth.token}`
@@ -16,13 +17,13 @@ export async function api(method: string, url: string, payload?: unknown) {
     body: method !== 'GET' && payload ? JSON.stringify(unref(payload)) : null
   })
 
-  const data = await response.json() as ApiErrorResponse
+  const data = await response.json() as T | ApiErrorResponse
 
   if (!response.ok) {
-    handleApiError(url, response.status, data)
+    handleApiError(url, response.status, data as ApiErrorResponse)
   }
 
-  return data
+  return data as T
 }
 
 

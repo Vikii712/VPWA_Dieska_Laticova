@@ -17,3 +17,7 @@ router.get('/me', [AuthController, 'me']).as('auth.me').use(middleware.auth())
 
 router.get('/channels', [ChannelsController, 'getChannels']).use(middleware.auth())
 router.get('/channels/:id/messages', [ChannelsController, 'getChannelMessages']).as('messages.index').use(middleware.auth())
+
+router.get('/channels/:channelId/users', [ChannelsController, 'getUsersInChannel'])
+
+router.post('/channels/:id/messages', [ChannelsController, 'sendMessage']).use(middleware.auth())

@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import user1 from '../assets/images/profile_pic.svg'
-import user2 from '../assets/images/user_icon.svg'
-
-import { ref, nextTick, watch } from 'vue'
 import { useChatStore } from 'stores/chat'
 import { useAuthStore } from 'stores/auth'
-import { QScrollArea } from 'quasar'
+import {QInfiniteScroll} from "quasar";
 
 const chat = useChatStore()
 const auth = useAuthStore()
-
-const scrollArea = ref<QScrollArea | null>(null)
 
 
 /*
@@ -29,34 +23,18 @@ function toggleTyping(id: number) {
 
 async function onLoad(index: number, done: (stop?: boolean) => void) {
   await chat.loadMessages()
-  done(!chat.hasMoreMessages)
+  done(true)
 }
 
-watch(
-  () => chat.messages.length,
-  async () => {
-    await nextTick()
-    scrollToBottom()
-  }
-)
-
-function scrollToBottom() {
-  if (!scrollArea.value) return
-  const target = scrollArea.value.getScrollTarget()
-  scrollArea.value.setScrollPosition('vertical', target.scrollHeight, 300)
-}
 </script>
 
 <template>
-  <q-scroll-area ref="scrollArea" class="fit">
-
     <div
       v-if="!chat.currentChannelId"
-      class="column items-center justify-center text-grey-5"
-      style="height: 100%;"
+      class="column items-center text-grey-5"
     >
-      <q-icon name="forum" size="80px" />
-      <p class="text-h6 q-mt-md">Select a channel to start chatting</p>
+      <q-icon name="forum" size="80px"/>
+      <p class="text-h6 q-mt-md ">Select a channel to start chatting</p>
     </div>
 
     <q-infinite-scroll
@@ -71,14 +49,13 @@ function scrollToBottom() {
         </div>
       </template>
 
-      <q-timeline color="deep-purple-6" class="q-px-lg q-pb-xl" layout="dense">
+      <q-timeline color="deep-purple-6" class="q-px-lg q-pb-xl" layout="dense" v-if="chat.messages.length > 0">
         <q-timeline-entry
-          v-for="message in chat.messages"
+          v-for="message in [...chat.messages].reverse()"
           :key="message.id"
           :title="message.author.id === auth.user?.id ? 'You' : message.author.nick"
           :subtitle="new Date(message.createdAt).toLocaleString()"
           :color="message.author.id === auth.user?.id ? 'teal' : 'blue-grey'"
-          :avatar="message.author.id === auth.user?.id ? user1 : user2"
           class="text-white"
         >
           <div
@@ -116,10 +93,11 @@ function scrollToBottom() {
           />
         </q-timeline-entry>
         -->
-
         </q-timeline>
+      <div v-else class="q-pa-md text-white">
+        No messages yet for this channel.
+      </div>
     </q-infinite-scroll>
-  </q-scroll-area>
 </template>
 <style scoped>
 

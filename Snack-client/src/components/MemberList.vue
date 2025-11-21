@@ -1,7 +1,10 @@
 <script setup lang="ts">
 
+  import { useChatStore} from "stores/chat";
+
   const props = defineProps<{DrawerOpen: boolean}>()
   const emit = defineEmits<{(e: "update:DrawerOpen", value: boolean): void}>()
+  const chat = useChatStore()
 
 </script>
 
@@ -26,23 +29,18 @@
       <q-list padding>
 
         <q-item
-          v-for="n in 15"
-          :key="n"
+          v-for="user in chat.currentChannelUsers"
+          :key="user.id"
           clickable
           class="q-pl-md q-pr-none"
         >
           <q-avatar>
-            <q-badge floating class="q-ml-lg" v-if="n > 6 && n < 10">DND</q-badge>
-            <q-badge floating class="q-ml-lg" color="red" v-else-if="n >= 10">Offline</q-badge>
-            <q-badge floating class="q-ml-lg"  color="teal" v-else >Active</q-badge>
+            <q-badge floating class="q-ml-lg" color="teal">Active</q-badge>
             <img alt="" src="../assets/images/user_icon.svg" width="40" />
           </q-avatar>
 
-          <q-item-section v-if="n > 6 && n < 10" class="q-pl-md text-white">
-            XXXXXXXXXXXXXXXXXXXXXXXX
-          </q-item-section>
-          <q-item-section v-else class="q-pl-md q-pr-none text-white">
-            24_character_username_XX
+          <q-item-section class="q-pl-md text-white">
+            {{user.nick}}
           </q-item-section>
         </q-item>
 

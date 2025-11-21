@@ -3,21 +3,19 @@
   import RightDrawer from "components/RightDrawer.vue";
   import LeftDrawer from "components/LeftDrawer.vue"
   import ChannelPage from "pages/ChannelPage.vue";
-  import {useQuasar} from "quasar";
   import MemberList from "components/MemberList.vue";
 
   const rightDrawerOpen = ref<boolean>(false)
-  const $q = useQuasar()
-
-  const leftDrawerOpen = ref(false)
   const memberListOpen = ref(false)
+
+  const leftDrawerMini = ref(true)
 
   function toggleRightDrawer(): void {
     rightDrawerOpen.value = !rightDrawerOpen.value
   }
 
   function toggleLeftDrawer() {
-    leftDrawerOpen.value = !leftDrawerOpen.value
+    leftDrawerMini.value = !leftDrawerMini.value
   }
 
   function toggleMemberList() {
@@ -40,10 +38,9 @@
 
       <q-toolbar class="flex bg-deep-purple-7">
         <q-btn
-          dense flat round
-          icon="list"
+          flat dense
+          :icon="leftDrawerMini ? 'keyboard_arrow_left' : 'list'"
           @click="toggleLeftDrawer"
-          v-show="$q.screen.lt.md"
         />
 
         <q-toolbar-title class="row items-center text-bold text-subtitle1">
@@ -60,7 +57,7 @@
         />
       </q-toolbar>
 
-      <LeftDrawer v-model:DrawerOpen="leftDrawerOpen" />
+      <LeftDrawer :mini="!leftDrawerMini" />
 
       <MemberList v-model:DrawerOpen="memberListOpen" />
 

@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { api } from 'src/services/api'
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+import {api} from 'src/services/api'
 
 export interface Channel {
   id: number
@@ -17,16 +17,6 @@ export interface Message {
   }
 }
 
-interface MessagesResponse {
-  messages: Message[]
-  meta: {
-    total: number
-    perPage: number
-    currentPage: number
-    lastPage: number
-  }
-}
-
 export const useChatStore = defineStore('chat', () => {
   const channels = ref<Channel[]>([])
   const currentChannelId = ref<number | null>(null)
@@ -36,9 +26,20 @@ export const useChatStore = defineStore('chat', () => {
   const hasMoreMessages = ref(true)
   const isLoadingMessages = ref(false)
 
+  const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string}>>([])
+
   async function fetchChannels() {
-    const result = await api('GET', '/channels')
-    channels.value = result.channels
+    try {
+      const result = await api<{messages : Message[]}>('GET', '/channels')
+      if (result && 'channels' in result && Array.isArray(result.channels)) {
+        channels.value = result.channels
+      } else {
+        channels.value = []
+      }
+    } catch (error) {
+      channels.value = []
+      console.error(error)
+    }
   }
 
   async function loadChannel(channelId: number) {
@@ -48,27 +49,47 @@ export const useChatStore = defineStore('chat', () => {
     hasMoreMessages.value = true
 
     await loadMessages()
+    await loadChannelUsers(channelId)
   }
 
   async function loadMessages() {
-    if (!currentChannelId.value || isLoadingMessages.value || !hasMoreMessages.value) {
-      return
-    }
-
+    if (!currentChannelId.value || isLoadingMessages.value) return
     isLoadingMessages.value = true
 
     try {
-      const result = await api<MessagesResponse>(
-        'GET',
-        `/channels/${currentChannelId.value}/messages?page=${currentPage.value}&limit=20`
-      )
-      console.log('loadMessages result', result)
-      messages.value.push(...result.messages.reverse())
-      hasMoreMessages.value = result.meta.currentPage < result.meta.lastPage
+      const res = await api<{messages: Message[]}>('GET', `/channels/${currentChannelId.value}/messages?page=${currentPage.value}`)
+
+
+      if (res.messages.length === 0) {
+        hasMoreMessages.value = false
+        isLoadingMessages.value = false
+        return
+      }
+
+      messages.value = [...res.messages, ...messages.value]
+
       currentPage.value++
+    } catch (error) {
+      console.error(error)
     } finally {
       isLoadingMessages.value = false
     }
+  }
+
+  async function loadChannelUsers(channelId: number) {
+    try {
+      const users = await api('GET', `/channels/${channelId}/users`)
+      currentChannelUsers.value = Array.isArray(users) ? users : []
+    } catch (error) {
+      console.error('Failed to load channel users', error)
+      currentChannelUsers.value = []
+    }
+  }
+
+  async function sendMessage(content: string) {
+    if (!currentChannelId.value) return
+    await api('POST', `/channels/${currentChannelId.value}/messages`, {content})
+    await loadMessages()
   }
 
   return {
@@ -77,9 +98,11 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     hasMoreMessages,
     isLoadingMessages,
+    currentChannelUsers,
 
     fetchChannels,
     loadChannel,
     loadMessages,
+    sendMessage,
   }
 })

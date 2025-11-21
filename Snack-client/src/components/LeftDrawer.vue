@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
 import AddChannel from "components/AddChannel.vue";
 import ExitChannel from "components/ExitChannel.vue";
 import { useChatStore } from "stores/chat";
+import {onMounted} from "vue";
 
 const chat = useChatStore()
-const miniState = ref(true)
 
-const props = defineProps<{ DrawerOpen: boolean }>()
-const emit = defineEmits<{ (e: "update:DrawerOpen", value: boolean): void }>()
+const props = defineProps<{mini: boolean}>()
 
 onMounted(async () => {
   await chat.fetchChannels()
@@ -23,20 +21,15 @@ async function selectChannel(channelId: number) {
 
 <template>
   <q-drawer
-    :model-value="props.DrawerOpen"
-    @update:model-value="emit('update:DrawerOpen', $event)"
+    :model-value="true"
+    :mini = "props.mini"
 
     side="left"
-    show-if-above
     elevated
-
-    :mini="miniState"
-    @mouseenter="miniState = false"
-    @mouseleave="miniState = true"
 
     class="bg-deep-purple-7 column"
   >
-    <q-item :class="{'bg-purple-10': !miniState}">
+    <q-item :class="{'bg-purple-10': !props.mini}">
       <q-item-section avatar />
       <q-item-section class="text-white text-bold text-body1">
         Channel list

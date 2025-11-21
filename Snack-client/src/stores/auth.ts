@@ -39,24 +39,24 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(payload: LoginPayload) {
-    const result = await api('POST', '/login', payload) as AuthResponse
+    const result = await api<AuthResponse>('POST', '/login', payload)
     authenticate(result)
   }
 
   async function register(payload: RegisterPayload) {
-    const result = await api('POST', '/register', payload) as AuthResponse
+    const result = await api<AuthResponse>('POST', '/register', payload)
     authenticate(result)
   }
 
   async function logout() {
-    await api('DELETE', '/logout')
+    await api<AuthResponse>('DELETE', '/logout')
     token.value = null
     user.value = null
     localStorage.removeItem('token')
   }
 
   async function me() {
-    const result = await api('GET', '/me') as { user: User }
+    const result = await api<AuthResponse>('GET', '/me') as { user: User }
     user.value = result.user
     return user.value
   }
