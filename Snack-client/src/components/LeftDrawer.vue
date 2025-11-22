@@ -25,7 +25,6 @@ async function selectChannel(channelId: number) {
     :mini = "props.mini"
 
     side="left"
-    elevated
 
     class="bg-deep-purple-7 column"
   >

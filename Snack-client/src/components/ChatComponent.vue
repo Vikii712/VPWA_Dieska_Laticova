@@ -2,11 +2,13 @@
 import { useChatStore } from 'stores/chat'
 import { useAuthStore } from 'stores/auth'
 import {QInfiniteScroll} from "quasar";
+import {watch, nextTick, ref} from "vue";
+
+const items = ref([ {}, {}, {}, {}, {}, {}, {} ])
+const infiniteScroll = ref<QInfiniteScroll | null>(null)
 
 const chat = useChatStore()
 const auth = useAuthStore()
-
-
 /*
 
 const activeTypingId = ref<number | null>(null)
@@ -21,10 +23,20 @@ function toggleTyping(id: number) {
 
  */
 
-async function onLoad(index: number, done: (stop?: boolean) => void) {
-  await chat.loadMessages()
-  done(true)
+function onLoad(index: number, done: (stop?: boolean) => void) {
+  setTimeout(() => {
+    items.value.splice(0, 0, {}, {}, {}, {}, {}, {}, {})
+    done()
+  }, 1000)
 }
+
+watch(() => chat.messages.length, async (newLength, oldLength) => {
+  if (newLength !== oldLength) {
+    await nextTick(() => {
+      infiniteScroll.value?.resume()
+    })
+  }
+})
 
 </script>
 
@@ -38,12 +50,12 @@ async function onLoad(index: number, done: (stop?: boolean) => void) {
     </div>
 
     <q-infinite-scroll
-      v-else
       @load="onLoad"
-      :initial-index="0"
+      v-if="chat.currentChannelId"
       reverse
+      ref="infiniteScroll"
     >
-      <template #loading>
+      <template v-slot:loading>
         <div class="row justify-center q-my-md">
           <q-spinner-dots color="deep-purple-6" size="40px" />
         </div>
@@ -51,7 +63,7 @@ async function onLoad(index: number, done: (stop?: boolean) => void) {
 
       <q-timeline color="deep-purple-6" class="q-px-lg q-pb-xl" layout="dense" v-if="chat.messages.length > 0">
         <q-timeline-entry
-          v-for="message in [...chat.messages].reverse()"
+          v-for="message in chat.messages"
           :key="message.id"
           :title="message.author.id === auth.user?.id ? 'You' : message.author.nick"
           :subtitle="new Date(message.createdAt).toLocaleString()"

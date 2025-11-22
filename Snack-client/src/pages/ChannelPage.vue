@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import ChatComponent from "components/ChatComponent.vue"
-import {ref} from "vue";
+import {computed, ref} from "vue";
 import {useChatStore} from "stores/chat";
+import {useQuasar} from "quasar";
 
+const $q = useQuasar();
 const message = ref('')
 const chat = useChatStore()
+const props = defineProps<{ mini: boolean }>()
+
+const leftOffset = computed(() => {
+  return $q.screen.lt.md ? 0 : (props.mini ? 300:56);
+});
 
 async function sendMessage() {
   if (!message.value.trim()) return
@@ -16,7 +23,7 @@ async function sendMessage() {
 <template>
     <ChatComponent/>
 
-    <div class="fixed-bottom bg-grey-9 q-pa-sm">
+    <div class="bg-grey-9 q-pa-sm" :style="{position:'fixed', bottom: 0, left: leftOffset + 'px', right: 0, width: `calc(100%-${leftOffset}px)`}">
       <q-form class="q-gutter-md q-ml-md-xl q-py-none">
         <q-input
           type="textarea"

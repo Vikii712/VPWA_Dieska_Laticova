@@ -1,10 +1,11 @@
 import {defineStore} from 'pinia'
-import {ref} from 'vue'
+import {nextTick, ref} from 'vue'
 import {api} from 'src/services/api'
 
 export interface Channel {
   id: number
   name: string
+  public: number | boolean
 }
 
 export interface Message {
@@ -74,6 +75,9 @@ export const useChatStore = defineStore('chat', () => {
     } finally {
       isLoadingMessages.value = false
     }
+
+    await nextTick()
+    window.dispatchEvent(new Event('messages-loaded'));
   }
 
   async function loadChannelUsers(channelId: number) {
@@ -88,8 +92,12 @@ export const useChatStore = defineStore('chat', () => {
 
   async function sendMessage(content: string) {
     if (!currentChannelId.value) return
-    await api('POST', `/channels/${currentChannelId.value}/messages`, {content})
-    await loadMessages()
+    const result = await api<{message: Message}>('POST', `/channels/${currentChannelId.value}/messages`, {content})
+    if (result && result.message) {
+      messages.value.push(result.message)
+      await nextTick()
+      window.dispatchEvent(new Event('messages-loaded'))
+    }
   }
 
   return {

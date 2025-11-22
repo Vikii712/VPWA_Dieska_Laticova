@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import Message from '#models/message'
 import db from '@adonisjs/lucid/services/db'
+import Channel from '#models/channel'
 
 export default class ChannelsController {
 
@@ -13,6 +14,7 @@ export default class ChannelsController {
       channels: user.channels.map(channel => ({
         id: channel.id,
         name: channel.name,
+        public: channel.public,
       }))
     })
   }
@@ -46,7 +48,7 @@ export default class ChannelsController {
     const messages = await Message.query()
       .where('channel_id', channelId)
       .preload('author')
-      .orderBy('created_at', 'desc')
+      .orderBy('created_at', 'asc')
       .paginate(page, limit)
 
     return response.ok({
@@ -100,5 +102,44 @@ export default class ChannelsController {
         typing: message.typing
       }
     })
+  }
+
+  async createChannel({auth, request, response} : HttpContext) {
+    const user = auth.getUserOrFail()
+    const name = request.input('name')
+    const type = request.input('type')
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return response.badRequest({message: 'You must provide a valid name.'})
+    }
+
+    const isPublic = (type === 'public')
+
+    const exists = await db
+      .from('channels')
+      .where('name', name)
+      .andWhere('moderator_id', user.id).first()
+
+    if(exists) {
+      return response.badRequest({ message: 'You already have a channel with this name.' })
+    }
+
+    const channel = await Channel.create({
+      name,
+      public: isPublic,
+      moderatorId: user.id,
+    })
+
+    await db.table('channel_users').insert({ channel_id: channel.id, user_id: user.id, created_at: Date.now() })
+
+    return response.ok({
+      channel: {
+        id: channel.id,
+        name: channel.name,
+        public: channel.public,
+        moderator_id: channel.moderatorId,
+      }
+    })
+
   }
 }

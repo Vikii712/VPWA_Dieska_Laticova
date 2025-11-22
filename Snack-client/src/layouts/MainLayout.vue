@@ -1,14 +1,19 @@
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { ref, computed } from 'vue'
   import RightDrawer from "components/RightDrawer.vue";
   import LeftDrawer from "components/LeftDrawer.vue"
   import ChannelPage from "pages/ChannelPage.vue";
   import MemberList from "components/MemberList.vue";
+  import {useChatStore} from "stores/chat";
 
   const rightDrawerOpen = ref<boolean>(false)
   const memberListOpen = ref(false)
 
   const leftDrawerMini = ref(true)
+  const chat = useChatStore()
+
+  const currentChannel = computed(() =>
+  chat.channels.find(c => c.id === chat.currentChannelId))
 
   function toggleRightDrawer(): void {
     rightDrawerOpen.value = !rightDrawerOpen.value
@@ -38,6 +43,7 @@
 
       <q-toolbar class="flex bg-deep-purple-7">
         <q-btn
+          v-if="$q.screen.gt.sm"
           flat dense
           :icon="leftDrawerMini ? 'keyboard_arrow_left' : 'list'"
           @click="toggleLeftDrawer"
@@ -45,9 +51,9 @@
 
         <q-toolbar-title class="row items-center text-bold text-subtitle1">
           <q-item-label lines="1" class=" q-ml-md-xl q-mr-sm">
-            We post really long messages that don't make sense
+            {{ currentChannel?.name || 'Please choose a channel'}}
           </q-item-label>
-          <div>[private]</div>
+          <div>{{currentChannel ? (currentChannel.public ? '[public]' : '[private]') : ''}}</div>
         </q-toolbar-title>
 
         <q-btn
@@ -66,7 +72,7 @@
     <RightDrawer v-model="rightDrawerOpen" />
 
     <q-page-container class="bg-dark q-pt-xl">
-      <ChannelPage/>
+      <ChannelPage :mini="leftDrawerMini"/>
     </q-page-container>
 
   </q-layout>

@@ -62,9 +62,9 @@ async function logout() {
       </div>
 
       <div class="q-mx-md">
-        <p class="q-mb-none">Name: Alexandra Donatella</p>
-        <p class="q-mb-none">Surname: Novakovska-Kralikova</p>
-        <p class="q-mb-none">eMail: {{auth.user?.email ?? 'x'}}</p>
+        <p class="q-mb-none">Name: {{auth.user?.name ?? 'x'}}</p>
+        <p class="q-mb-none">Surname: {{auth.user?.lastName ?? 'x'}}</p>
+        <p class="q-mb-none">e-mail: {{auth.user?.email ?? 'x'}}</p>
 
       </div>
 
