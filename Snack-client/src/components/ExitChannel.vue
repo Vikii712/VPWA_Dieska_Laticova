@@ -1,11 +1,28 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {computed, ref} from "vue";
+import {api} from "src/services/api";
+import {useChatStore} from "stores/chat";
+import { useRouter } from 'vue-router'
+import { useAuthStore } from 'stores/auth'
 
 const exitDialog = ref<boolean>(false);
-defineProps<{n: number}>()
+const chat = useChatStore()
+const auth = useAuthStore()
+const router = useRouter()
+const isModerator = computed(() => {
+  const currentUserId = auth.user?.id;
+  const moderatorId = chat.currentChannel?.moderatorId;
+  //console.log(moderatorId, currentUserId);
+  return currentUserId != null && moderatorId != null && currentUserId === moderatorId;
+});
 
-function confirmExit() {
+async function confirmExit() {
   exitDialog.value = false;
+  console.log("Leaving channel:", chat.currentChannelId)
+  await api('POST', `/channels/${chat.currentChannelId}/leave`)
+  await router.push('/main');
+  chat.currentChannelId = null
+  await chat.fetchChannels()
 }
 
 </script>
@@ -24,7 +41,7 @@ function confirmExit() {
       <q-card-section class="text-h6 flex justify-center">
         Do you really want to leave the channel?
       </q-card-section>
-      <q-card-section class="flex justify-center text-subtitle1 text-negative" v-if="n == 2 || n == 4">
+      <q-card-section class="flex justify-center text-subtitle1 text-negative" v-if="isModerator">
         Since you are the editor, the channel will be deleted
       </q-card-section>
       <q-card-actions align="center">

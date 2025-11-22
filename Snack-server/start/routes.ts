@@ -23,3 +23,5 @@ router.get('/channels/:channelId/users', [ChannelsController, 'getUsersInChannel
 router.post('/channels/:id/messages', [ChannelsController, 'sendMessage']).use(middleware.auth())
 
 router.post('/channels', [ChannelsController, 'createChannel']).use(middleware.auth())
+
+router.post('/channels/:id/leave', [ChannelsController, 'leaveOrDeleteChannel']).use(middleware.auth())

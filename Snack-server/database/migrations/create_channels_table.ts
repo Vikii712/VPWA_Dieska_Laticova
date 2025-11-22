@@ -12,7 +12,7 @@ export default class extends BaseSchema {
 
       table.foreign('moderator_id').references('id').inTable('users').onDelete('CASCADE')
 
-      table.timestamp('created_at').notNullable()
+      table.timestamp('created_at').defaultTo(this.now()).notNullable()
       table.timestamp('updated_at').nullable()
     })
   }

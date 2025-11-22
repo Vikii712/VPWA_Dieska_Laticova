@@ -73,6 +73,7 @@ watch(() => chat.messages.length, async (newLength, oldLength) => {
           <div
             class="q-pa-sm text-white text-body1"
             :class="message.author.id === auth.user?.id ? 'bg-teal-10' : 'bg-blue-grey-10'"
+            style="white-space: pre-line;"
           >
             {{ message.content }}
           </div>

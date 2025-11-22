@@ -14,7 +14,7 @@ export default class extends BaseSchema {
       table.foreign('created_by').references('id').inTable('users').onDelete('CASCADE')
       table.foreign('channel_id').references('id').inTable('channels').onDelete('CASCADE')
 
-      table.timestamp('created_at').notNullable()
+      table.timestamp('created_at').defaultTo(this.now()).notNullable()
       table.timestamp('updated_at').nullable()
     })
   }

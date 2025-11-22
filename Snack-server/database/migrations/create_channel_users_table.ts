@@ -26,7 +26,7 @@ export default class extends BaseSchema {
       table.unique(['user_id', 'channel_id'])
 
       // Timestamps - pridané!
-      table.timestamp('created_at').notNullable()
+      table.timestamp('created_at').defaultTo(this.now()).notNullable()
       table.timestamp('updated_at').nullable()
     })
   }

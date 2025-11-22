@@ -1,11 +1,12 @@
 import {defineStore} from 'pinia'
-import {nextTick, ref} from 'vue'
+import {computed, nextTick, ref} from 'vue'
 import {api} from 'src/services/api'
 
 export interface Channel {
   id: number
   name: string
   public: number | boolean
+  moderatorId: number
 }
 
 export interface Message {
@@ -29,11 +30,24 @@ export const useChatStore = defineStore('chat', () => {
 
   const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string}>>([])
 
+  const currentChannel = computed(() =>
+    channels.value.find(ch => ch.id === currentChannelId.value)
+  )
+  const moderatorId = computed(() =>
+    currentChannel.value?.moderatorId ?? null
+  )
+
   async function fetchChannels() {
     try {
-      const result = await api<{messages : Message[]}>('GET', '/channels')
+      const result = await api<{channels: Channel[]}>('GET', '/channels')
+      //console.log('Fetched channels:', result.channels);
       if (result && 'channels' in result && Array.isArray(result.channels)) {
         channels.value = result.channels
+
+        if (!channels.value.some(ch => ch.id === currentChannelId.value)) {
+          currentChannelId.value = null
+        }
+
       } else {
         channels.value = []
       }
@@ -81,6 +95,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function loadChannelUsers(channelId: number) {
+    if (!channelId) return
     try {
       const users = await api('GET', `/channels/${channelId}/users`)
       currentChannelUsers.value = Array.isArray(users) ? users : []
@@ -107,10 +122,11 @@ export const useChatStore = defineStore('chat', () => {
     hasMoreMessages,
     isLoadingMessages,
     currentChannelUsers,
+    currentChannel,
+    moderatorId,
 
     fetchChannels,
     loadChannel,
-    loadMessages,
     sendMessage,
   }
 })

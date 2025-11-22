@@ -18,6 +18,13 @@ async function sendMessage() {
   await chat.sendMessage(message.value)
   message.value = ''
 }
+
+function handleNewline(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    void sendMessage();
+  }
+}
 </script>
 
 <template>
@@ -35,7 +42,8 @@ async function sendMessage() {
           bg-color="grey-9"
           class="text-white"
           input-class="q-pl-lg"
-          :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}">
+          :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}"
+          @keydown="handleNewline">
           <template v-slot:append>
             <q-btn flat class="q-pl-sm q-pb-sm absolute-bottom-right" @click="sendMessage">
               <q-icon name="send" color="deep-purple-2" />

@@ -15,6 +15,7 @@ export default class ChannelsController {
         id: channel.id,
         name: channel.name,
         public: channel.public,
+        moderatorId: channel.moderatorId,
       }))
     })
   }
@@ -130,7 +131,7 @@ export default class ChannelsController {
       moderatorId: user.id,
     })
 
-    await db.table('channel_users').insert({ channel_id: channel.id, user_id: user.id, created_at: Date.now() })
+    await db.table('channel_users').insert({ channel_id: channel.id, user_id: user.id})
 
     return response.ok({
       channel: {
@@ -141,5 +142,40 @@ export default class ChannelsController {
       }
     })
 
+  }
+
+  async leaveOrDeleteChannel({auth, params, response}: HttpContext) {
+    const user = auth.getUserOrFail()
+    const channelId = params.id
+    const channel = await Channel.find(channelId);
+
+    if (!channel) { return response.ok({message: "Channel already deleted"})}
+
+    const userInChannel = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .first()
+
+    if (!userInChannel) {
+      return response.forbidden({ message: "You are not a member of this channel" })
+    }
+
+
+    if (channel.moderatorId === user.id) {
+      await Message.query().where('channel_id', channelId).delete()
+      await db.from('channel_users').where('channel_id', channelId).delete()
+      await channel.delete()
+
+      return response.ok({message: 'Channel deleted'});
+    }
+
+    await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .delete()
+
+    return response.ok({ message: "Left channel" })
   }
 }
