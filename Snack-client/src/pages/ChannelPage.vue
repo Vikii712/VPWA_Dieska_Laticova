@@ -4,28 +4,98 @@ import {computed, ref} from "vue";
 import {useChatStore} from "stores/chat";
 import {useQuasar} from "quasar";
 
-const $q = useQuasar();
+const $q = useQuasar()
 const message = ref('')
 const chat = useChatStore()
 const props = defineProps<{ mini: boolean }>()
 
-const leftOffset = computed(() => {
-  return $q.screen.lt.md ? 0 : (props.mini ? 300:56);
-});
+const leftOffset = computed(() =>
+  $q.screen.lt.md ? 0 : (props.mini ? 300 : 56)
+)
+
+async function handleJoinCommand(cmd: string) {
+  const [, channelName, typeArg] = cmd.trim().split(/\s+/)
+
+  if (!channelName) {
+    $q.notify({
+      type: 'negative',
+      message: 'Usage: /join channelName [private]',
+      position: 'top'
+    })
+    return
+  }
+
+  const isPrivate = typeArg?.toLowerCase() === 'private'
+  const channelType: 'public' | 'private' = isPrivate ? 'private' : 'public'
+
+  const existing = chat.channels.find(c => c.name === channelName)
+
+  if (existing) {
+    const isExistingPrivate = existing.public === false || existing.public === 0
+
+    if (isExistingPrivate) {
+      $q.notify({
+        type: 'warning',
+        message: `Channel "${channelName}" is private.`,
+        position: 'top'
+      })
+      return
+    }
+
+    await chat.loadChannel(existing.id)
+    $q.notify({
+      type: 'positive',
+      message: `Joined ${channelName}`,
+      position: 'top'
+    })
+    return
+  }
+
+  try {
+    const created = await chat.createChannel(channelName, channelType)
+
+    if (created) {
+      await chat.loadChannel(created.id)
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: `Created and joined "${channelName}"${isPrivate ? ' (private)' : ''}`,
+      position: 'top'
+    })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Failed to create channel'
+    $q.notify({
+      type: 'negative',
+      message: msg,
+      position: 'top'
+    })
+  }
+}
+
 
 async function sendMessage() {
-  if (!message.value.trim()) return
-  await chat.sendMessage(message.value)
+  const text = message.value.trim()
+  if (!text) return
+
+  if (text.startsWith('/join ')) {
+    await handleJoinCommand(text)
+    message.value = ''
+    return
+  }
+
+  await chat.sendMessage(text)
   message.value = ''
 }
 
 function handleNewline(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    void sendMessage();
+    e.preventDefault()
+    void sendMessage()
   }
 }
 </script>
+
 
 <template>
     <ChatComponent/>

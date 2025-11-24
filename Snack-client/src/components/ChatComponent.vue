@@ -9,19 +9,7 @@ const infiniteScroll = ref<QInfiniteScroll | null>(null)
 
 const chat = useChatStore()
 const auth = useAuthStore()
-/*
 
-const activeTypingId = ref<number | null>(null)
-
-function toggleTyping(id: number) {
-  if (activeTypingId.value === id) {
-    activeTypingId.value = null
-  } else {
-    activeTypingId.value = id
-  }
-}
-
- */
 
 function onLoad(index: number, done: (stop?: boolean) => void) {
   setTimeout(() => {
@@ -55,11 +43,6 @@ watch(() => chat.messages.length, async (newLength, oldLength) => {
       reverse
       ref="infiniteScroll"
     >
-      <template v-slot:loading>
-        <div class="row justify-center q-my-md">
-          <q-spinner-dots color="deep-purple-6" size="40px" />
-        </div>
-      </template>
 
       <q-timeline color="deep-purple-6" class="q-px-lg q-pb-xl" layout="dense" v-if="chat.messages.length > 0">
         <q-timeline-entry
@@ -81,31 +64,6 @@ watch(() => chat.messages.length, async (newLength, oldLength) => {
           <q-separator class="q-mb-0 q-mt-sm rounded-borders" />
         </q-timeline-entry>
 
-        <!--
-        <q-timeline-entry
-          v-for="entry in chat.typing"
-          :key="'typing-' + entry.id"
-          color="blue-grey"
-          :avatar=entry.user
-          class="text-white"
-        >
-          <template #title>
-              <span>
-                {{entry.persona}}
-              </span>
-          </template>
-          <div
-            v-show="activeTypingId === entry.id"
-            class="q-pa-sm text-white bg-grey-9 text-body1"
-          >
-            {{ entry.message }}
-          </div>
-          <q-spinner-dots
-            size="2rem"
-            @click="toggleTyping(entry.id)"
-          />
-        </q-timeline-entry>
-        -->
         </q-timeline>
       <div v-else class="q-pa-md text-white">
         No messages yet for this channel.
