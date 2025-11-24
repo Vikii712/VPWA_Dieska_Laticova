@@ -5,9 +5,9 @@ import { BaseModel, column, hasMany, manyToMany } from '@adonisjs/lucid/orm'
 import type { HasMany, ManyToMany} from '@adonisjs/lucid/types/relations'
 import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import {DbAccessTokensProvider} from "@adonisjs/auth/access_tokens";
-import Message from "../models/message.js"
-import Channel from "../models/channel.js"
-import Notification from "../models/notification.js";
+import Message from "#models/message"
+import Channel from "#models/channel"
+import Notification from "#models/notification";
 
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {

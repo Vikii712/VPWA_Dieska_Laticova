@@ -7,6 +7,7 @@ export interface Channel {
   name: string
   public: number | boolean
   moderatorId: number
+  lastActiveAt?: string
 }
 
 export interface Message {
@@ -107,7 +108,10 @@ export const useChatStore = defineStore('chat', () => {
 
   async function sendMessage(content: string) {
     if (!currentChannelId.value) return
+
     const result = await api<{message: Message}>('POST', `/channels/${currentChannelId.value}/messages`, {content})
+
+
     if (result && result.message) {
       messages.value.push(result.message)
       await nextTick()

@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Message from '#models/message'
 import db from '@adonisjs/lucid/services/db'
 import Channel from '#models/channel'
+import {DateTime} from "luxon";
 
 export default class ChannelsController {
 
@@ -78,7 +79,7 @@ export default class ChannelsController {
   }
 
   async sendMessage({auth, params, request, response} : HttpContext) {
-    const user = await auth.getUserOrFail()
+    const user = auth.getUserOrFail()
     const channelId = params.id
     const content = request.input('content')
 
@@ -88,6 +89,12 @@ export default class ChannelsController {
       content,
       typing: false
     })
+
+    const channel = await Channel.find(channelId)
+    if (channel) {
+      channel.lastActiveAt = DateTime.now()
+      await channel.save()
+    }
 
     await message.load('author')
 

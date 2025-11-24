@@ -10,6 +10,7 @@
 
 import router from '@adonisjs/core/services/router'
 import server from '@adonisjs/core/services/server'
+import cron from  'node-cron'
 
 /**
  * The error handler is used to convert an exception
@@ -40,4 +41,9 @@ router.use([() => import('@adonisjs/core/bodyparser_middleware'), () => import('
  */
 export const middleware = router.named({
   auth: () => import('#middleware/auth_middleware')
+})
+
+cron.schedule('0 2 * * *', async () => {
+  const { deleteInactiveChannels } = await import('#services/deleteInactiveChannels')
+  await deleteInactiveChannels()
 })

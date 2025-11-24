@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon'
 import type {  BelongsTo } from '@adonisjs/lucid/types/relations'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
-import User from "../models/user.js"
-import Channel from "../models/channel.js"
+import User from "#models/user"
+import Channel from "#models/channel"
 import Message from "#models/message";
 
 export default class Notification extends BaseModel {

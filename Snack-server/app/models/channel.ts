@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon'
-import type {HasMany, BelongsTo, ManyToMany} from '@adonisjs/lucid/types/relations'
-import {BaseModel, column, hasMany, belongsTo, manyToMany} from '@adonisjs/lucid/orm'
-import Message from "../models/message.js"
-import User from "../models/user.js"
-import Notification from "#models/notification";
+import type { HasMany, BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
+import { BaseModel, column, hasMany, belongsTo, manyToMany } from '@adonisjs/lucid/orm'
+import Message from '#models/message'
+import User from '#models/user'
+import Notification from '#models/notification'
 
 export default class Channel extends BaseModel {
   @column({ isPrimary: true })
@@ -17,6 +17,9 @@ export default class Channel extends BaseModel {
 
   @column()
   declare public: boolean;
+
+  @column.dateTime({ columnName: 'last_active_at' })
+  declare lastActiveAt: DateTime | null
 
   @belongsTo(() => User, {
     foreignKey: "moderatorId",
