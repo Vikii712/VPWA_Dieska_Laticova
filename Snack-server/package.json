@@ -60,7 +60,8 @@
     "better-sqlite3": "^12.4.1",
     "luxon": "^3.7.2",
     "node-cron": "^4.2.1",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.1"
   },
   "hotHook": {
     "boundaries": [

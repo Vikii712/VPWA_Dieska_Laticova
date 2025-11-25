@@ -1,6 +1,7 @@
 import {defineStore} from 'pinia'
 import {computed, nextTick, ref} from 'vue'
 import {api} from 'src/services/api'
+import {useSocketStore} from "stores/socketStore";
 
 export interface Channel {
   id: number
@@ -14,6 +15,7 @@ export interface Message {
   id: number
   content: string
   createdAt: string
+  channelId: number
   author: {
     id: number
     nick: string
@@ -68,6 +70,9 @@ export const useChatStore = defineStore('chat', () => {
 
     await loadMessages()
     await loadChannelUsers(channelId)
+    const socketStore = useSocketStore()
+
+    socketStore.joinChannel(channelId)
   }
 
   async function loadMessages() {
@@ -140,9 +145,24 @@ export const useChatStore = defineStore('chat', () => {
 
 
     if (result && result.message) {
-      messages.value.push(result.message)
-      await nextTick()
-      window.dispatchEvent(new Event('messages-loaded'))
+      const { useSocketStore } = await import('stores/socketStore');
+      const socketStore = useSocketStore();
+
+      socketStore.socket?.emit('sendMessage', {
+        channelId: currentChannelId.value,
+        message: result.message,
+      }, (response: unknown) => {
+        if (response) {
+          if (typeof response === 'object' && 'status' in response) {
+            const resp = response as { status: string }
+            if (resp.status === 'ok') {
+              console.log('Message sent')
+            }
+          } else {
+            console.warn('Error sending a message')
+          }
+        }
+      })
     }
 
   }

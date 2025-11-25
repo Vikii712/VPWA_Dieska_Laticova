@@ -3,11 +3,15 @@ import ChatComponent from "components/ChatComponent.vue"
 import {computed, ref} from "vue";
 import {useChatStore} from "stores/chat";
 import {useQuasar} from "quasar";
+import {useSocketStore} from "stores/socketStore";
 
 const $q = useQuasar()
 const message = ref('')
 const chat = useChatStore()
 const props = defineProps<{ mini: boolean }>()
+
+const socketStore = useSocketStore()
+socketStore.init()
 
 const leftOffset = computed(() =>
   $q.screen.lt.md ? 0 : (props.mini ? 300 : 56)
@@ -42,6 +46,7 @@ async function handleJoinCommand(cmd: string) {
       return
     }
 
+    socketStore.joinChannel(existing.id)
     await chat.loadChannel(existing.id)
     $q.notify({
       type: 'positive',

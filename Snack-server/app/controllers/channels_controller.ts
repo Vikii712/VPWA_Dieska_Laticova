@@ -58,6 +58,7 @@ export default class ChannelsController {
         id: msg.id,
         content: msg.content,
         createdAt: msg.createdAt.toISO(),
+        channelId: channelId,
         author: {
           id: msg.author.id,
           nick: msg.author.nick,
@@ -103,6 +104,7 @@ export default class ChannelsController {
         id: message.id,
         content: message.content,
         createdAt: message.createdAt.toISO(),
+        channelId: channelId,
         author: {
           id: user.id,
           nick: user.nick
