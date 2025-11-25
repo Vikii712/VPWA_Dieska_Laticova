@@ -198,7 +198,6 @@ export const useChatStore = defineStore('chat', () => {
     if (result && result.message) {
       const { useSocketStore } = await import('stores/socketStore');
       const socketStore = useSocketStore();
-      socketStore.init()
 
       socketStore.socket?.emit('sendMessage', {
         channelId: currentChannelId.value,
