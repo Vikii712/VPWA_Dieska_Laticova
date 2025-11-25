@@ -50,7 +50,9 @@ async function confirmExit() {
       <q-card-section class="text-h6 flex justify-center">
         Do you really want to leave the channel?
       </q-card-section>
-
+      <q-card-section class="flex justify-center text-subtitle1 text-negative" v-if="isModerator">
+        Since you are the editor, the channel will be deleted
+      </q-card-section>
       <q-card-actions align="center">
         <q-btn outline label="Yes" color="negative" @click="confirmExit" />
         <q-btn label="No" color="purple" @click="close" />

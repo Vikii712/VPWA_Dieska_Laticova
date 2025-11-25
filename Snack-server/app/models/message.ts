@@ -4,6 +4,7 @@ import {BaseModel, column, belongsTo, hasMany} from '@adonisjs/lucid/orm'
 import User from "#models/user"
 import Channel from "#models/channel"
 import Notification from "#models/notification";
+import Mention from "#models/mention";
 
 export default class Message extends BaseModel {
   @column({ isPrimary: true })
@@ -30,6 +31,11 @@ export default class Message extends BaseModel {
     foreignKey: "channelId",
   })
   declare channel: BelongsTo<typeof Channel>;
+
+  @hasMany(() => Mention, {
+    foreignKey: 'messageId',
+  })
+  declare mentions: HasMany<typeof Mention>
 
   @hasMany(() => Notification, {
     foreignKey: 'messageId',

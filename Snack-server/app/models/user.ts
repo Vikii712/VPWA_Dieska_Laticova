@@ -8,6 +8,7 @@ import {DbAccessTokensProvider} from "@adonisjs/auth/access_tokens";
 import Message from "#models/message"
 import Channel from "#models/channel"
 import Notification from "#models/notification";
+import Mention from "#models/mention";
 
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
@@ -38,6 +39,11 @@ export default class User extends compose(BaseModel, AuthFinder) {
     foreignKey: 'userId',
   })
   declare notifications: HasMany<typeof Notification>
+
+  @hasMany(() => Mention, {
+    foreignKey: 'mentionedId',
+  })
+  declare mentions: HasMany<typeof Mention>
 
   @hasMany(() => Message, {
     foreignKey: 'createdBy',
