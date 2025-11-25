@@ -4,78 +4,124 @@ import type { Socket } from 'socket.io-client'
 import { ref } from 'vue'
 import type {Message} from "stores/chat";
 import { Notify } from 'quasar'
+import {useAuthStore} from "stores/auth";
 
 export const useSocketStore = defineStore('socket', () => {
   const socket = ref<Socket | null>(null)
+  const connected = ref(false)
 
-  const init = () => {
-    if (!socket.value) {
-      socket.value = io('http://localhost:3333')
+  function connect(token: string) {
+    if (socket.value?.connected) return
 
-      socket.value.on('connect', () => {
-        console.log('Connected', socket.value?.id)
-      });
+    socket.value = io('http://localhost:3333', {
+      auth: { token },
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+    })
 
-      socket.value.on('newMessage', async (message) => {
-        const { useChatStore } = await import('stores/chat');
-        const chatStore = useChatStore();
-
-        if (!chatStore.channelMessages[message.channelId]) {
-          chatStore.channelMessages[message.channelId] = [];
-        }
-        chatStore.channelMessages[message.channelId]!.push(message);
-
-        if (message.channelId === chatStore.currentChannelId) {
-          chatStore.messages.push(message);
-          window.dispatchEvent(new Event('messages-loaded'));
-        } else {
-          if (!chatStore.unreadChannels[message.channelId]) {
-            chatStore.unreadChannels[message.channelId] = 0;
-          }
-          chatStore.unreadChannels[message.channelId]!++;
-          Notify.create({
-            type: 'info',
-            color: 'blue',
-            message: `New message in channel ${message.channelName ?? message.channelId}`,
-            position: 'bottom',
-          });
-        }
-      });
-
-      socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
-        console.log('Channel users updated:', data.channelId)
-        const {useChatStore} = await import('stores/chat');
-        const chatStore = useChatStore();
-
-        if (data.channelId === chatStore.currentChannelId) {
-          await chatStore.loadChannelUsers(data.channelId);
-        }
-      });
-
-      socket.value.on('connect_error', (err) => {
-        console.error('Problem with connection to the server::', err)
-      });
-
-      socket.value.on('disconnect', (reason) => {
-        console.warn('Socket disconnected:', reason)
-      });
-
-      socket.value.on('channelDeleted', async ({ channelId }) => {
-        const { useChatStore } = await import('stores/chat')
-        const chatStore = useChatStore()
-
-        if (chatStore.currentChannelId === channelId) {
-          chatStore.currentChannelId = null
-          chatStore.messages.splice(0)
-        }
-
-        await chatStore.fetchChannels()
-      })
-    }
+    setupListeners()
   }
 
-  const joinChannel = (channelId: number) => {
-    socket.value?.emit('joinChannel', channelId)
+  function setupListeners() {
+    if (!socket.value) return
+
+    socket.value.on('connect', () => {
+      connected.value = true
+      console.log('Socket connected')
+    })
+
+    socket.value.on('disconnect', () => {
+      connected.value = false
+      console.log('Socket disconnected')
+    })
+
+    socket.value.on('connect_error', (error) => {
+      console.error('Socket connection error:', error)
+      Notify.create({
+        type: 'negative',
+        message: 'Connection error. Retrying...',
+        position: 'top',
+      })
+    })
+
+    socket.value.on('newMessage', async (data: Message & { channelName?: string }) => {
+      const { useChatStore } = await import('./chat')
+      const chatStore = useChatStore()
+
+      console.log('Received new message:', data)
+
+      chatStore.addMessage(data)
+
+      if (data.channelId !== chatStore.currentChannelId) {
+        Notify.create({
+          type: 'info',
+          color: 'blue',
+          message: `New message in ${data.channelName || `channel #${data.channelId}`}`,
+          position: 'bottom',
+          timeout: 3000,
+        })
+      }
+    })
+
+    socket.value.on('userTyping', (data: { channelId: number; userId: number; nick: string }) => {
+      console.log('User typing:', data)
+    })
+
+    socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
+      console.log('Channel users updated:', data.channelId)
+      const {useChatStore} = await import('stores/chat');
+      const chatStore = useChatStore();
+
+      if (data.channelId === chatStore.currentChannelId) {
+        await chatStore.loadChannelUsers(data.channelId);
+      }
+    });
+
+    socket.value.on('connect_error', (err) => {
+      console.error('Problem with connection to the server::', err)
+    });
+
+    socket.value.on('disconnect', (reason) => {
+      console.warn('Socket disconnected:', reason)
+    });
+
+    socket.value.on('channelDeleted', async ({ channelId }) => {
+      const { useChatStore } = await import('stores/chat')
+      const chatStore = useChatStore()
+
+      if (chatStore.currentChannelId === channelId) {
+        chatStore.currentChannelId = null
+        chatStore.messages.splice(0)
+      }
+
+      await chatStore.fetchChannels()
+    })
+  }
+
+  function disconnect() {
+    if (socket.value) {
+      socket.value.removeAllListeners()
+      socket.value.disconnect()
+      socket.value = null
+      connected.value = false
+    }
+  }
+  function leaveChannel(channelId: number) {
+    socket.value?.emit('leaveChannel', { channelId })
+  }
+
+  function joinChannel(channelId: number) {
+    const auth = useAuthStore()
+    const userId = auth.user?.id
+    if (!userId) {
+      console.warn('No user ID available for joinChannel!')
+      return
+    }
+    socket.value?.emit('joinChannel', { userId, channelId })
+    console.log('Emitting joinChannel', { userId, channelId })
   }
 
   const sendMessage = (channelId: number, message: Message) => {
@@ -95,5 +141,34 @@ export const useSocketStore = defineStore('socket', () => {
     }
   }
 
-  return { socket, init, joinChannel, sendMessage, notifyUserJoined, notifyUserLeft }
+  function init(token?: string) {
+    if (socket.value?.connected) return
+    const _token = token || useAuthStore().token
+    if (!_token) {
+      console.warn('No token for socket initialization!')
+      return
+    }
+    socket.value = io('http://localhost:3333', {
+      auth: { token: _token },
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+    })
+    setupListeners()
+  }
+
+  return {
+    socket,
+    connected,
+    connect,
+    disconnect,
+    joinChannel,
+    leaveChannel,
+    sendMessage,
+    notifyUserJoined,
+    notifyUserLeft,
+    init
+  }
 })

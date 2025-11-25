@@ -12,28 +12,58 @@ app.ready(() => {
     },
   })
 
-  io?.on('connection', (socket) => {
-    console.log('A new connection', socket.id)
+  console.log('Socket.IO server started.')
 
-    socket.on('joinChannel', (userId, channelId) => {
-      if (!userSockets[userId]) userSockets[userId] = [];
+  io.on('connection', (socket) => {
+    const userId = socket.data.userId
+    console.log(`User ${userId} connected: ${socket.id}`)
+
+    if (userId !== undefined) {
+      if (!userSockets[userId]) userSockets[userId] = []
       if (!userSockets[userId].includes(socket.id)) {
-        userSockets[userId].push(socket.id);
+        userSockets[userId].push(socket.id)
+      }
+    } else {
+      console.warn(`Socket ${socket.id} connected without userId`)
+    }
+
+    socket.on('sendMessage', async (data, callback) => {
+      try {
+        const { channelId, message } = data
+        const usersInChannel = await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .select('user_id')
+        const channel = await db.from('channels').where('id', channelId).first()
+
+        let sentCount = 0
+        for (const { user_id } of usersInChannel) {
+          const sockets = getUserSockets(user_id)
+          for (const socketId of sockets) {
+            io.to(socketId).emit('newMessage', {
+              ...message,
+              channelId,
+              channelName: channel?.name,
+            })
+            sentCount++
+          }
+        }
+
+        if (callback) callback({ status: 'ok', sentTo: sentCount })
+      } catch (error) {
+        console.error('Error broadcasting message:', error)
+        if (callback) callback({ status: 'error', error: 'Failed to broadcast message' })
+      }
+    })
+
+    socket.on('joinChannel', ({ userId: joinUserId, channelId }: { userId: number; channelId: number }) => {
+      console.log(`joinChannel from user:`, userId, 'socket:', socket.id, 'channel:', channelId)
+      if (!userSockets[joinUserId]) userSockets[joinUserId] = []
+      if (!userSockets[joinUserId].includes(socket.id)) {
+        userSockets[joinUserId].push(socket.id)
       }
       socket.join(`channel-${channelId}`)
     })
-
-    socket.on('sendMessage', async ({ channelId, message }, callback) => {
-      const usersInChannel = await db.from('channel_users').where('channel_id', channelId).select('user_id');
-
-      usersInChannel.forEach(({ user_id }) => {
-        getUserSockets(user_id).forEach(sid => {
-          io.to(sid).emit('newMessage', { ...message, channelId, channelName: message.channelName });
-        });
-      });
-
-      callback({ status: 'ok' });
-    });
 
     socket.on('userJoinedChannel', ({channelId}) => {
       io.to(`channel-${channelId}`).emit('channelUsersUpdated', {channelId})
@@ -47,12 +77,49 @@ app.ready(() => {
       console.log('deleteChannel received for channel:', channelId)
       io.to(`channel-${channelId}`).emit('channelDeleted', { channelId })
     })
-    socket.on('disconnect', () => {
-      for (const userId in userSockets) {
-        userSockets[userId] = userSockets[userId].filter(id => id !== socket.id);
-        if (userSockets[userId].length === 0) delete userSockets[userId];
+
+    socket.on('typing', async (data) => {
+      try {
+        const { channelId, isTyping } = data
+        if (userId === undefined) return
+
+        const usersInChannel = await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', '!=', userId)
+          .select('user_id')
+
+        const user = await db.from('users').where('id', userId).first()
+
+        for (const { user_id } of usersInChannel) {
+          for (const socketId of getUserSockets(user_id)) {
+            io.to(socketId).emit('userTyping', {
+              channelId,
+              userId,
+              nick: user?.nick,
+              isTyping,
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error broadcasting typing:', error)
       }
-    });
+    })
+
+    socket.on('disconnect', () => {
+      if (userId !== undefined) {
+        console.log(`User ${userId} disconnected: ${socket.id}`)
+        if (userSockets[userId]) {
+          userSockets[userId] = userSockets[userId].filter(id => id !== socket.id)
+          if (userSockets[userId].length === 0) {
+            delete userSockets[userId]
+          }
+        }
+      } else {
+        console.log(`Unknown user disconnected: ${socket.id}`)
+      }
+    })
+
 
   })
 })
@@ -60,3 +127,23 @@ app.ready(() => {
 function getUserSockets(userId: number) {
   return userSockets[userId] || [];
 }
+
+/*
+function addUserSocket(userId: number, socketId: string) {
+  if (!userSockets.has(userId)) {
+    userSockets.set(userId, new Set())
+  }
+  userSockets.get(userId)!.add(socketId)
+}
+
+function removeUserSocket(userId: number, socketId: string) {
+  const sockets = userSockets.get(userId)
+  if (sockets) {
+    sockets.delete(socketId)
+    if (sockets.size === 0) {
+      userSockets.delete(userId)
+    }
+  }
+}
+
+ */

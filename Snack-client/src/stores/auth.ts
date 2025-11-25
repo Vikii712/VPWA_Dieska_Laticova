@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue'
 import { api } from 'src/services/api'
+import {useSocketStore} from "stores/socketStore";
 
 interface User {
   id: number;
@@ -36,6 +37,8 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = result.token
     user.value = result.user
     localStorage.setItem('token', result.token)
+    const socketStore = useSocketStore()
+    socketStore.init(token.value)
   }
 
   async function login(payload: LoginPayload) {

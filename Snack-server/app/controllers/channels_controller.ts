@@ -28,18 +28,15 @@ export default class ChannelsController {
     const limit = request.input('limit', 20)
 
     const channel = await db.from('channels').where('id', channelId).first()
-    if(!channel) return response.notFound({message: 'No channel found.'})
-
-    const users = await db
-      .from('users')
-      .select(['users.id', 'users.nick'])
-      .join('channel_users', 'users.id', '=', 'channel_users.user_id')
-      .where('channel_users.channel_id', '=', channelId)
-
-    const isMember = users.some(u => u.id === user.id)
-    if (!isMember && !channel.public) {
-      return response.forbidden({ message: 'You are not a member of this channel' })
+    if (!channel) {
+      return response.notFound({ message: 'No channel found.' })
     }
+
+    const isMember = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .first()
 
     if (!isMember && !channel.public) {
       return response.forbidden({
@@ -50,11 +47,13 @@ export default class ChannelsController {
     const messages = await Message.query()
       .where('channel_id', channelId)
       .preload('author')
-      .orderBy('created_at', 'asc')
+      .orderBy('created_at', 'desc')
       .paginate(page, limit)
 
+    const messagesArray = messages.all().reverse()
+
     return response.ok({
-      messages: messages.all().map(msg => ({
+      messages: messagesArray.map(msg => ({
         id: msg.id,
         content: msg.content,
         createdAt: msg.createdAt.toISO(),
@@ -69,34 +68,49 @@ export default class ChannelsController {
     })
   }
 
-  async getUsersInChannel({ params, response } : HttpContext) {
+  async getUsersInChannel({ params, response }: HttpContext) {
     const channelId = params.channelId
+
     const users = await db
       .from('users')
       .select(['users.id', 'users.nick'])
       .join('channel_users', 'users.id', '=', 'channel_users.user_id')
       .where('channel_users.channel_id', channelId)
-    response.json(users)
+
+    return response.json(users)
   }
 
-  async sendMessage({auth, params, request, response} : HttpContext) {
+  async sendMessage({ auth, params, request, response }: HttpContext) {
     const user = auth.getUserOrFail()
     const channelId = params.id
     const content = request.input('content')
 
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return response.badRequest({ message: 'Message content is required.' })
+    }
+
+    const isMember = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .first()
+
+    if (!isMember) {
+      return response.forbidden({
+        message: 'You are not a member of this channel'
+      })
+    }
     const message = await Message.create({
       channelId: channelId,
       createdBy: user.id,
-      content,
+      content: content.trim(),
       typing: false
     })
-
     const channel = await Channel.find(channelId)
     if (channel) {
       channel.lastActiveAt = DateTime.now()
       await channel.save()
     }
-
     await message.load('author')
 
     return response.ok({
@@ -114,13 +128,13 @@ export default class ChannelsController {
     })
   }
 
-  async createChannel({auth, request, response} : HttpContext) {
+  async createChannel({ auth, request, response }: HttpContext) {
     const user = auth.getUserOrFail()
     const name = request.input('name')
     const type = request.input('type')
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return response.badRequest({message: 'You must provide a valid name.'})
+      return response.badRequest({ message: 'You must provide a valid name.' })
     }
 
     const isPublic = (type === 'public')
@@ -188,12 +202,14 @@ export default class ChannelsController {
     })
   }
 
-  async leaveOrDeleteChannel({auth, params, response}: HttpContext) {
+  async leaveOrDeleteChannel({ auth, params, response }: HttpContext) {
     const user = auth.getUserOrFail()
     const channelId = params.id
-    const channel = await Channel.find(channelId);
+    const channel = await Channel.find(channelId)
 
-    if (!channel) { return response.ok({message: "Channel already deleted"})}
+    if (!channel) {
+      return response.ok({ message: "Channel already deleted" })
+    }
 
     const userInChannel = await db
       .from('channel_users')
@@ -202,16 +218,17 @@ export default class ChannelsController {
       .first()
 
     if (!userInChannel) {
-      return response.forbidden({ message: "You are not a member of this channel" })
+      return response.forbidden({
+        message: "You are not a member of this channel"
+      })
     }
-
 
     if (channel.moderatorId === user.id) {
       await Message.query().where('channel_id', channelId).delete()
       await db.from('channel_users').where('channel_id', channelId).delete()
       await channel.delete()
 
-      return response.ok({message: 'Channel deleted'});
+      return response.ok({ message: 'Channel deleted' })
     }
 
     await db

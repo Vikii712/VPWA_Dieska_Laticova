@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import ChatComponent from "components/ChatComponent.vue"
+import ChatComponent from "components/ChatComponent.vue";
 import CancelDialog from "components/cancelDialog.vue"
 import { ref, computed } from "vue"
-import { useQuasar } from "quasar"
 import { useChatStore } from "stores/chat"
-import { useSocketStore } from "stores/socketStore"
 import { useCommandStore } from "stores/commandStore"
+import {useQuasar} from "quasar";
 
 const $q = useQuasar()
 const message = ref('')
 const chat = useChatStore()
+const isSending = ref(false)
 const props = defineProps<{ mini: boolean }>()
-const socketStore = useSocketStore()
 const commandStore = useCommandStore()
-socketStore.init()
 
 const leftOffset = computed(() =>
   $q.screen.lt.md ? 0 : (props.mini ? 300 : 56)
@@ -23,7 +21,7 @@ const showCancelDialog = ref(false)
 
 async function sendMessage() {
   const text = message.value.trim()
-  if (!text) return
+  if (!text || isSending.value) return
 
   if (text.startsWith('/')) {
     const result = await commandStore.processCommand(text)
@@ -55,16 +53,17 @@ async function sendMessage() {
   message.value = ''
 }
 
-function handleNewline(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    void sendMessage()
+async function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    await sendMessage()
   }
 }
+
 </script>
 
 <template>
-  <ChatComponent />
+  <ChatComponent/>
 
   <cancelDialog
     v-if="chat.currentChannelId !== null"
@@ -74,9 +73,9 @@ function handleNewline(e: KeyboardEvent) {
 
   <div
     class="bg-grey-9 q-pa-sm"
-    :style="{ position: 'fixed', bottom: 0, left: leftOffset + 'px', right: 0, width: `calc(100% - ${leftOffset}px)` }"
+    :style="{position:'fixed', bottom: 0, left: leftOffset + 'px', right: 0, width: `calc(100% - ${leftOffset}px)`}"
   >
-    <q-form class="q-gutter-md q-ml-md-xl q-py-none">
+    <q-form class="q-gutter-md q-ml-md-xl q-py-none" @submit.prevent="sendMessage">
       <q-input
         type="textarea"
         autogrow
@@ -87,11 +86,19 @@ function handleNewline(e: KeyboardEvent) {
         bg-color="grey-9"
         class="text-white"
         input-class="q-pl-lg"
-        :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none' }"
-        @keydown="handleNewline"
+        :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}"
+        @keydown="handleKeydown"
+        :disable="isSending"
+        placeholder="Type a message..."
       >
         <template v-slot:append>
-          <q-btn flat class="q-pl-sm q-pb-sm absolute-bottom-right" @click="sendMessage">
+          <q-btn
+            flat
+            class="q-pl-sm q-pb-sm absolute-bottom-right"
+            @click="sendMessage"
+            :disable="!message.trim() || isSending"
+            :loading="isSending"
+          >
             <q-icon name="send" color="deep-purple-2" />
           </q-btn>
         </template>
@@ -99,3 +106,6 @@ function handleNewline(e: KeyboardEvent) {
     </q-form>
   </div>
 </template>
+
+<style scoped>
+</style>

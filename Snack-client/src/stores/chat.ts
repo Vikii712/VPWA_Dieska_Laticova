@@ -20,29 +20,59 @@ export interface Message {
     id: number
     nick: string
   }
+  typing?: boolean
 }
 
-
+interface ChannelMeta {
+  currentPage: number
+  hasMore: boolean
+  isLoading: boolean
+}
 
 export const useChatStore = defineStore('chat', () => {
   const channels = ref<Channel[]>([])
   const currentChannelId = ref<number | null>(null)
 
-  const messages = ref<Message[]>([])
-  const currentPage = ref(1)
-  const hasMoreMessages = ref(true)
-  const isLoadingMessages = ref(false)
+  const channelMessages = ref<Record<number, Message[]>>({})
+
+  const channelMeta = ref<Record<number, ChannelMeta>>({})
 
   const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string}>>([])
-  const channelMessages = ref<Record<number, Message[]>>({});
+
   const unreadChannels = ref<Record<number, number>>({})
 
   const currentChannel = computed(() =>
     channels.value.find(ch => ch.id === currentChannelId.value)
   )
+
   const moderatorId = computed(() =>
     currentChannel.value?.moderatorId ?? null
   )
+
+  const messages = computed(() => {
+    if (!currentChannelId.value) return []
+    return channelMessages.value[currentChannelId.value] || []
+  })
+
+  const hasMoreMessages = computed(() => {
+    if (!currentChannelId.value) return false
+    return channelMeta.value[currentChannelId.value]?.hasMore ?? true
+  })
+
+  const isLoadingMessages = computed(() => {
+    if (!currentChannelId.value) return false
+    return channelMeta.value[currentChannelId.value]?.isLoading ?? false
+  })
+
+  function initChannelMeta(channelId: number) {
+    if (!channelMeta.value[channelId]) {
+      channelMeta.value[channelId] = {
+        currentPage: 0,
+        hasMore: true,
+        isLoading: false
+      }
+    }
+  }
 
   async function fetchChannels() {
     try {
@@ -64,57 +94,52 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function loadChannel(channelId: number) {
-    currentChannelId.value = channelId
-    messages.value = channelMessages.value[channelId] || [];
-    currentPage.value = 1
-    hasMoreMessages.value = true
+  async function loadMessages(channelId: number, page: number = 1) {
+    initChannelMeta(channelId)
 
-    await loadMessages()
-    await loadChannelUsers(channelId)
-    const socketStore = useSocketStore()
+    const meta = channelMeta.value[channelId]!
 
-    if (channelMessages.value[channelId]) {
-      messages.value = channelMessages.value[channelId];
-    }
-    currentChannelId.value = channelId;
-
-    if (unreadChannels.value[channelId]) {
-      unreadChannels.value[channelId] = 0;
+    if (meta.isLoading || !meta.hasMore) {
+      return
     }
 
-    socketStore.joinChannel(channelId)
-  }
-
-  async function loadMessages() {
-    if (!currentChannelId.value || isLoadingMessages.value) return
-    isLoadingMessages.value = true
+    meta.isLoading = true
 
     try {
-      const res = await api<{messages: Message[]}>('GET', `/channels/${currentChannelId.value}/messages?page=${currentPage.value}`)
+      const result = await api<{
+        messages: Message[]
+        meta: { currentPage: number; lastPage: number; total: number }
+      }>('GET', `/channels/${channelId}/messages?page=${page}&limit=20`)
 
+      if (result && result.messages) {
+        if (!channelMessages.value[channelId]) {
+          channelMessages.value[channelId] = []
+        }
 
-      if (res.messages.length === 0) {
-        hasMoreMessages.value = false
-        isLoadingMessages.value = false
-        return
+        const existingIds = new Set(channelMessages.value[channelId].map(m => m.id))
+        const newMessages = result.messages.filter(m => !existingIds.has(m.id))
+
+        channelMessages.value[channelId] = [
+          ...newMessages,
+          ...channelMessages.value[channelId]
+        ]
+
+        meta.currentPage = result.meta.currentPage
+        meta.hasMore = result.meta.currentPage < result.meta.lastPage
+
+        await nextTick()
+        window.dispatchEvent(new Event('messages-loaded'))
       }
-
-      messages.value = [...res.messages, ...messages.value]
-
-      currentPage.value++
     } catch (error) {
-      console.error(error)
+      console.error('Error loading messages:', error)
     } finally {
-      isLoadingMessages.value = false
+      meta.isLoading = false
     }
-
-    await nextTick()
-    window.dispatchEvent(new Event('messages-loaded'));
   }
 
   async function loadChannelUsers(channelId: number) {
     if (!channelId) return
+
     try {
       const users = await api('GET', `/channels/${channelId}/users`)
       currentChannelUsers.value = Array.isArray(users) ? users : []
@@ -122,6 +147,32 @@ export const useChatStore = defineStore('chat', () => {
       console.error('Failed to load channel users', error)
       currentChannelUsers.value = []
     }
+  }
+
+  async function loadChannel(channelId: number) {
+    if (currentChannelId.value) {
+      const socketStore = useSocketStore()
+      socketStore.leaveChannel(currentChannelId.value)
+    }
+
+    currentChannelId.value = channelId
+
+    if (unreadChannels.value[channelId]) {
+      unreadChannels.value[channelId] = 0
+    }
+
+    await loadChannelUsers(channelId)
+
+    if (!channelMessages.value[channelId] || channelMessages.value[channelId].length === 0) {
+      initChannelMeta(channelId)
+      await loadMessages(channelId, 1)
+    }
+
+    const socketStore = useSocketStore()
+    socketStore.joinChannel(channelId)
+
+    await nextTick()
+    window.dispatchEvent(new Event('channel-switched'))
   }
 
   async function createChannel(name: string, type: 'public' | 'private' = 'public') {
@@ -144,7 +195,7 @@ export const useChatStore = defineStore('chat', () => {
 
       return channels.value.find(ch => ch.name === name.trim())
     } catch (error) {
-      console.error(error)
+      console.error('Error creating channel:', error)
       throw new Error('Failed to create channel. Please try again.')
     }
   }
@@ -187,7 +238,6 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       throw new Error('Failed to load channel after join.')
-
     } catch (error) {
       if (error instanceof Error) {
         throw error
@@ -200,50 +250,85 @@ export const useChatStore = defineStore('chat', () => {
 
   async function sendMessage(content: string) {
     if (!currentChannelId.value) return
+    const socketStore = useSocketStore()
 
-    const result = await api<{message: Message}>('POST', `/channels/${currentChannelId.value}/messages`, {content})
+    try {
+      const { message } = await api<{ message: Message }>(
+        'POST',
+        `/channels/${currentChannelId.value}/messages`,
+        { content }
+      )
+
+      addMessage(message)
+
+      socketStore.sendMessage(currentChannelId.value, message)
+
+    } catch (error) {
+      console.error('Error sending message:', error)
+    }
+  }
 
 
-    if (result && result.message) {
-      const { useSocketStore } = await import('stores/socketStore');
-      const socketStore = useSocketStore();
+  function addMessage(message: Message) {
+    const channelId = message.channelId
 
-      socketStore.socket?.emit('sendMessage', {
-        channelId: currentChannelId.value,
-        message: result.message,
-      }, (response: unknown) => {
-        if (response) {
-          if (typeof response === 'object' && 'status' in response) {
-            const resp = response as { status: string }
-            if (resp.status === 'ok') {
-              console.log('Message sent')
-            }
-          } else {
-            console.warn('Error sending a message')
-          }
-        }
-      })
+    if (!channelMessages.value[channelId]) {
+      channelMessages.value[channelId] = []
     }
 
+    const exists = channelMessages.value[channelId].some(m => m.id === message.id)
+    if (exists) {
+      console.log('Duplicate message detected, skipping:', message.id)
+      return
+    }
+
+    channelMessages.value[channelId].push(message)
+
+    console.log(`Message ${message.id} added to channel ${channelId}`)
+
+    if (channelId !== currentChannelId.value) {
+      if (!unreadChannels.value[channelId]) {
+        unreadChannels.value[channelId] = 0
+      }
+      unreadChannels.value[channelId]++
+    } else {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('new-message-received'))
+      }, 50)
+    }
+  }
+
+  function clearAll() {
+    currentChannelId.value = null
+    channelMessages.value = {}
+    channelMeta.value = {}
+    unreadChannels.value = {}
+    currentChannelUsers.value = []
   }
 
   return {
     channels,
     currentChannelId,
-    messages,
     channelMessages,
-    unreadChannels,
-    hasMoreMessages,
-    isLoadingMessages,
+    channelMeta,
     currentChannelUsers,
+    unreadChannels,
+
     currentChannel,
     moderatorId,
+    messages,
+    hasMoreMessages,
+    isLoadingMessages,
+
+    fetchChannels,
+    loadChannel,
+    loadMessages,
+    loadChannelUsers,
     createChannel,
     joinOrCreateChannel,
     leaveChannel,
-    loadChannelUsers,
-    fetchChannels,
-    loadChannel,
     sendMessage,
+    addMessage,
+    clearAll,
   }
 })
