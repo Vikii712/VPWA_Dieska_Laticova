@@ -2,9 +2,9 @@ import { defineStore } from 'pinia'
 import { io } from 'socket.io-client'
 import type { Socket } from 'socket.io-client'
 import { ref } from 'vue'
-import type {Message} from "stores/chat";
+import type { Message } from 'stores/chat'
 import { Notify } from 'quasar'
-import {useAuthStore} from "stores/auth";
+import { useAuthStore } from 'stores/auth'
 
 export const useSocketStore = defineStore('socket', () => {
   const socket = ref<Socket | null>(null)
@@ -48,29 +48,49 @@ export const useSocketStore = defineStore('socket', () => {
     })
 
     socket.value.on('newMessage', async (data: Message & { channelName?: string }) => {
-      const { useChatStore } = await import('./chat')
+      const { useChatStore } = await import('stores/chat')
       const chatStore = useChatStore()
+      const authStore = useAuthStore()
 
       console.log('Received new message:', data)
 
       chatStore.addMessage(data)
 
+      const isMentioned = data.mentions?.some(m => m.mentionedId === authStore.user?.id)
+
+      if (data.channelId !== chatStore.currentChannelId) {
+        Notify.create({
+          type: isMentioned ? 'warning' : 'info',
+          color: isMentioned ? 'yellow-8' : 'blue',
+          ...(isMentioned && { icon: 'alternate_email' }),
+          message: isMentioned
+            ? `${data.author.nick} mentioned you in ${data.channelName || `channel #${data.channelId}`}`
+            : `New message in ${data.channelName || `channel #${data.channelId}`}`,
+          position: 'top',
+          timeout: isMentioned ? 5000 : 3000,
+        })
+      } else if (isMentioned) {
+        Notify.create({
+          type: 'warning',
+          color: 'yellow-8',
+          icon: 'alternate_email',
+          message: `${data.author.nick} mentioned you!`,
+          position: 'top',
+          timeout: 3000,
+        })
+      }
       if (window.Notification && document.hidden) {
         if (Notification.permission === 'granted') {
           new Notification(
             `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
-            {
-              body: `${data.author.nick}: ${data.content.slice(0, 80)}`,
-            }
+            { body: `${data.author.nick}: ${data.content.slice(0, 80)}` }
           )
         } else if (Notification.permission !== 'denied') {
           void Notification.requestPermission().then(permission => {
             if (permission === 'granted') {
               new Notification(
                 `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
-                {
-                  body: `${data.author.nick}: ${data.content.slice(0, 80)}`,
-                }
+                { body: `${data.author.nick}: ${data.content.slice(0, 80)}` }
               )
             }
           })
@@ -84,11 +104,11 @@ export const useSocketStore = defineStore('socket', () => {
 
     socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
       console.log('Channel users updated:', data.channelId)
-      const {useChatStore} = await import('stores/chat');
-      const chatStore = useChatStore();
+      const { useChatStore } = await import('stores/chat')
+      const chatStore = useChatStore()
 
       if (data.channelId === chatStore.currentChannelId) {
-        await chatStore.loadChannelUsers(data.channelId);
+        await chatStore.loadChannelUsers(data.channelId)
       }
     });
 
@@ -106,7 +126,7 @@ export const useSocketStore = defineStore('socket', () => {
 
       if (chatStore.currentChannelId === channelId) {
         chatStore.currentChannelId = null
-        chatStore.messages.splice(0, 0)
+        chatStore.messages.splice(0, chatStore.messages.length)
       }
 
       await chatStore.fetchChannels()
@@ -121,6 +141,7 @@ export const useSocketStore = defineStore('socket', () => {
       connected.value = false
     }
   }
+
   function leaveChannel(channelId: number) {
     socket.value?.emit('leaveChannel', { channelId })
   }
@@ -147,9 +168,8 @@ export const useSocketStore = defineStore('socket', () => {
   const notifyUserLeft = (channelId: number, isModerator: boolean) => {
     socket.value?.emit('userLeftChannel', { channelId })
 
-    if(isModerator) {
+    if (isModerator) {
       socket.value?.emit('deleteChannel', { channelId })
-
     }
   }
 

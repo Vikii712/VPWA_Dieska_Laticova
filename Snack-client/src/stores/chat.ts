@@ -12,6 +12,11 @@ export interface Channel {
   lastActiveAt?: string
 }
 
+export interface Mention {
+  id: number
+  mentionedId: number
+}
+
 export interface Message {
   id: number
   content: string
@@ -22,6 +27,7 @@ export interface Message {
     nick: string
   }
   typing?: boolean
+  mentions?: Mention[]
 }
 
 interface ChannelMeta {
@@ -312,6 +318,11 @@ export const useChatStore = defineStore('chat', () => {
     currentChannelUsers.value = []
   }
 
+  function isUserMentioned(message: Message, userId: number): boolean {
+    if (!message.mentions || message.mentions.length === 0) return false
+    return message.mentions.some(mention => mention.mentionedId === userId)
+  }
+
   return {
     channels,
     currentChannelId,
@@ -336,5 +347,6 @@ export const useChatStore = defineStore('chat', () => {
     sendMessage,
     addMessage,
     clearAll,
+    isUserMentioned,
   }
 })

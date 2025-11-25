@@ -9,6 +9,12 @@ const auth = useAuthStore()
 
 const infiniteScroll = ref<QInfiniteScroll | null>(null)
 
+const isMessageMentioningMe = (messageId: number) => {
+  const message = chat.messages.find(m => m.id === messageId)
+  if (!message || !auth.user?.id) return false
+  return chat.isUserMentioned(message, auth.user.id)
+}
+
 async function onLoad(index: number, done: (stop?: boolean) => void) {
   if (!chat.currentChannelId) {
     done(true)
@@ -51,24 +57,24 @@ async function handleChannelSwitch() {
   await scrollToBottom()
 }
 
+function onNewMessageEvent() {
+  void handleNewMessage()
+}
+
+function onChannelSwitchedEvent() {
+  void handleChannelSwitch()
+}
+
 onMounted(async () => {
-  window.addEventListener('new-message-received', () => {
-    void handleNewMessage()
-  })
-  window.addEventListener('channel-switched', () => {
-    void handleChannelSwitch()
-  })
+  window.addEventListener('new-message-received', onNewMessageEvent)
+  window.addEventListener('channel-switched', onChannelSwitchedEvent)
 
   await scrollToBottom()
 })
 
 onBeforeUnmount(() => {
-  window.addEventListener('new-message-received', () => {
-    void handleNewMessage()
-  })
-  window.addEventListener('channel-switched', () => {
-    void handleChannelSwitch()
-  })
+  window.removeEventListener('new-message-received', onNewMessageEvent)
+  window.removeEventListener('channel-switched', onChannelSwitchedEvent)
 })
 
 watch(() => chat.currentChannelId, async () => {
@@ -80,14 +86,15 @@ watch(() => chat.currentChannelId, async () => {
 })
 </script>
 
+
 <template>
-    <div
-      v-if="!chat.currentChannelId"
-      class="column items-center text-grey-5"
-    >
-      <q-icon name="forum" size="80px"/>
-      <p class="text-h6 q-mt-md ">Select a channel to start chatting</p>
-    </div>
+  <div
+    v-if="!chat.currentChannelId"
+    class="column items-center text-grey-5"
+  >
+    <q-icon name="forum" size="80px"/>
+    <p class="text-h6 q-mt-md ">Select a channel to start chatting</p>
+  </div>
 
   <q-infinite-scroll
     @load="onLoad"
@@ -97,11 +104,6 @@ watch(() => chat.currentChannelId, async () => {
     :offset="250"
     class="full-height overflow-auto"
   >
-    <template v-slot:loading>
-      <div class="row justify-center q-my-md">
-        <q-spinner-dots color="deep-purple" size="40px" />
-      </div>
-    </template>
 
     <q-timeline
       color="deep-purple-6"
@@ -114,12 +116,22 @@ watch(() => chat.currentChannelId, async () => {
         :key="message.id"
         :title="message.author.id === auth.user?.id ? 'You' : message.author.nick"
         :subtitle="new Date(message.createdAt).toLocaleString()"
-        :color="message.author.id === auth.user?.id ? 'teal' : 'blue-grey'"
+        :color="
+          isMessageMentioningMe(message.id)
+            ? 'yellow-8'
+            : message.author.id === auth.user?.id
+              ? 'teal'
+              : 'blue-grey'
+        "
         class="text-white"
       >
         <div
           class="q-pa-sm text-white text-body1"
-          :class="message.author.id === auth.user?.id ? 'bg-teal-10' : 'bg-blue-grey-10'"
+          :class="{
+            'bg-yellow-9': isMessageMentioningMe(message.id),
+            'bg-teal-10': !isMessageMentioningMe(message.id) && message.author.id === auth.user?.id,
+            'bg-blue-grey-10': !isMessageMentioningMe(message.id) && message.author.id !== auth.user?.id
+          }"
           style="white-space: pre-line;"
         >
           {{ message.content }}

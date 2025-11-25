@@ -2,7 +2,9 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Message from '#models/message'
 import db from '@adonisjs/lucid/services/db'
 import Channel from '#models/channel'
-import {DateTime} from "luxon";
+import { DateTime } from "luxon"
+import Mention from '#models/mention'
+import User from '#models/user'
 
 export default class ChannelsController {
 
@@ -47,6 +49,7 @@ export default class ChannelsController {
     const messages = await Message.query()
       .where('channel_id', channelId)
       .preload('author')
+      .preload('mentions') // Načítame aj mentions
       .orderBy('created_at', 'desc')
       .paginate(page, limit)
 
@@ -63,6 +66,10 @@ export default class ChannelsController {
           nick: msg.author.nick,
         },
         typing: msg.typing,
+        mentions: msg.mentions?.map(mention => ({
+          id: mention.id,
+          mentionedId: mention.mentionedId,
+        })) || []
       })),
       meta: messages.getMeta()
     })
@@ -83,9 +90,9 @@ export default class ChannelsController {
   async sendMessage({ auth, params, request, response }: HttpContext) {
     const user = auth.getUserOrFail()
     const channelId = params.id
-    const content = request.input('content')
+    const content = request.input('content')?.trim()
 
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    if (!content) {
       return response.badRequest({ message: 'Message content is required.' })
     }
 
@@ -96,36 +103,62 @@ export default class ChannelsController {
       .first()
 
     if (!isMember) {
-      return response.forbidden({
-        message: 'You are not a member of this channel'
-      })
+      return response.forbidden({ message: 'You are not a member of this channel' })
     }
+
     const message = await Message.create({
-      channelId: channelId,
+      channelId,
       createdBy: user.id,
-      content: content.trim(),
+      content,
       typing: false
     })
+
     const channel = await Channel.find(channelId)
     if (channel) {
       channel.lastActiveAt = DateTime.now()
       await channel.save()
     }
+
     await message.load('author')
+
+    await this.processMentions(message.content, message.id)
+    await message.load('mentions')
 
     return response.ok({
       message: {
         id: message.id,
         content: message.content,
         createdAt: message.createdAt.toISO(),
-        channelId: channelId,
+        channelId,
         author: {
           id: user.id,
           nick: user.nick
         },
-        typing: message.typing
+        typing: message.typing,
+        mentions: message.mentions.map(m => ({
+          id: m.id,
+          mentionedId: m.mentionedId
+        }))
       }
     })
+  }
+
+
+  private async processMentions(messageContent: string, messageId: number) {
+    const mentionRegex = /@(\w+)/g
+    const mentions = Array.from(messageContent.matchAll(mentionRegex), m => m[1])
+
+    if (!mentions.length) return
+
+    for (const nick of mentions) {
+      const user = await User.query().where('nick', nick).first()
+      if (!user) continue
+
+      await Mention.create({
+        messageId,
+        mentionedId: user.id
+      })
+    }
   }
 
   async createChannel({ auth, request, response }: HttpContext) {
