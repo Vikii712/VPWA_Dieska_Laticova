@@ -2,8 +2,6 @@ import { unref } from 'vue'
 import { useAuthStore } from 'stores/auth'
 
 
-/* Funkcia api */
-
 export async function api<T>(method: string, url: string, payload?: unknown) : Promise<T> {
   const auth = useAuthStore()
 
@@ -26,10 +24,6 @@ export async function api<T>(method: string, url: string, payload?: unknown) : P
   return data as T
 }
 
-
-
-/*-----------------------------------*/
-/* API druhy errorov a ich vypisy */
 
 interface ValidationError {
   field: string;
@@ -72,12 +66,10 @@ function handleApiError(url: string, status: number, data: ApiErrorResponse): ne
     }
   }
 
-  // Handling pre channel errory
   if (url === '/channels' && status === 400 && data.message) {
     if (data.message.includes('private')) {
       throw new ApiError('This channel is private and you cannot join it.', status, data);
     }
-    // Pre ostatné channel errory použi server správu
     throw new ApiError(data.message, status, data);
   }
 

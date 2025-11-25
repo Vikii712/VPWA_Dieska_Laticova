@@ -125,18 +125,15 @@ export default class ChannelsController {
 
     const isPublic = (type === 'public')
 
-    // Najdi kanál podľa mena
     let channel = await db.from('channels').where('name', name).first()
 
     if(channel) {
-      // Najprv zisti či je užívateľ už členom
       const isMember = await db
         .from('channel_users')
         .where('channel_id', channel.id)
         .where('user_id', user.id)
         .first()
 
-      // Ak JE členom, vráť kanál (nech je private alebo public)
       if(isMember) {
         return response.ok({
           channel: {
@@ -149,12 +146,10 @@ export default class ChannelsController {
         })
       }
 
-      // Ak NIE JE členom a kanál je private, reject
       if (!channel.public) {
         return response.badRequest({ message: 'Channel is private.' })
       }
 
-      // Ak NIE JE členom a kanál je public, pridaj ho
       await db.table('channel_users').insert({
         channel_id: channel.id,
         user_id: user.id
@@ -171,7 +166,6 @@ export default class ChannelsController {
       })
     }
 
-    // Ak neexistuje, vytvor kanál
     channel = await Channel.create({
       name,
       public: isPublic,
@@ -188,7 +182,7 @@ export default class ChannelsController {
         id: channel.id,
         name: channel.name,
         public: channel.public,
-        moderator_id: channel.moderatorId, // Zjednotené pomenovanie
+        moderator_id: channel.moderatorId,
       },
       joined: false
     })

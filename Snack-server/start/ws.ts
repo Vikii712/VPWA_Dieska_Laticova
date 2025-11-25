@@ -32,6 +32,9 @@ app.ready(() => {
       io.to(`channel-${channelId}`).emit('channelUsersUpdated', {channelId})
     })
 
-
+    socket.on('deleteChannel', ({ channelId }) => {
+      console.log('deleteChannel received for channel:', channelId)
+      io.to(`channel-${channelId}`).emit('channelDeleted', { channelId })
+    })
   })
 })

@@ -1,67 +1,58 @@
 <script setup lang="ts">
 import ChatComponent from "components/ChatComponent.vue"
+import CancelDialog from "components/cancelDialog.vue"
 import { ref, computed } from "vue"
 import { useQuasar } from "quasar"
 import { useChatStore } from "stores/chat"
 import { useSocketStore } from "stores/socketStore"
+import { useCommandStore } from "stores/commandStore"
 
 const $q = useQuasar()
 const message = ref('')
 const chat = useChatStore()
 const props = defineProps<{ mini: boolean }>()
-
 const socketStore = useSocketStore()
+const commandStore = useCommandStore()
 socketStore.init()
 
 const leftOffset = computed(() =>
   $q.screen.lt.md ? 0 : (props.mini ? 300 : 56)
 )
 
+const showCancelDialog = ref(false)
+
 async function sendMessage() {
   const text = message.value.trim()
   if (!text) return
 
-  if (text.startsWith('/join ')) {
-    await handleJoinCommand(text)
+  if (text.startsWith('/')) {
+    const result = await commandStore.processCommand(text)
+    console.log(result)
+    if (result) {
+      if (result.type === 'dialog') {
+        if (!chat.currentChannelId) {
+          $q.notify({
+            type: 'warning',
+            message: 'You must be in a channel to leave it',
+            position: 'top'
+          })
+        } else {
+          showCancelDialog.value = true
+        }
+      } else {
+        $q.notify({
+          type: result.type,
+          message: result.message,
+          position: 'top'
+        })
+      }
+    }
     message.value = ''
     return
   }
 
   await chat.sendMessage(text)
   message.value = ''
-}
-
-async function handleJoinCommand(cmd: string) {
-  const [, channelName, typeArg] = cmd.trim().split(/\s+/)
-
-  if (!channelName) {
-    $q.notify({
-      type: 'negative',
-      message: 'Usage: /join channelName [private]',
-      position: 'top'
-    })
-    return
-  }
-
-  const isPrivate = typeArg?.toLowerCase() === 'private'
-  const channelType: 'public' | 'private' = isPrivate ? 'private' : 'public'
-
-  try {
-    const result = await chat.joinOrCreateChannel(channelName, channelType)
-
-    $q.notify({
-      type: 'positive',
-      message: result.joined ? `Joined "${channelName}"` : `Created and joined "${channelName}"${isPrivate ? ' (private)' : ''}`,
-      position: 'top'
-    })
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Failed to join or create channel'
-    $q.notify({
-      type: 'negative',
-      message: msg,
-      position: 'top'
-    })
-  }
 }
 
 function handleNewline(e: KeyboardEvent) {
@@ -73,11 +64,17 @@ function handleNewline(e: KeyboardEvent) {
 </script>
 
 <template>
-  <ChatComponent/>
+  <ChatComponent />
+
+  <cancelDialog
+    v-if="chat.currentChannelId !== null"
+    :channelId="chat.currentChannelId"
+    v-model:show="showCancelDialog"
+  />
 
   <div
     class="bg-grey-9 q-pa-sm"
-    :style="{position:'fixed', bottom: 0, left: leftOffset + 'px', right: 0, width: `calc(100% - ${leftOffset}px)`}"
+    :style="{ position: 'fixed', bottom: 0, left: leftOffset + 'px', right: 0, width: `calc(100% - ${leftOffset}px)` }"
   >
     <q-form class="q-gutter-md q-ml-md-xl q-py-none">
       <q-input
@@ -90,7 +87,7 @@ function handleNewline(e: KeyboardEvent) {
         bg-color="grey-9"
         class="text-white"
         input-class="q-pl-lg"
-        :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}"
+        :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none' }"
         @keydown="handleNewline"
       >
         <template v-slot:append>
@@ -102,6 +99,3 @@ function handleNewline(e: KeyboardEvent) {
     </q-form>
   </div>
 </template>
-
-<style scoped>
-</style>

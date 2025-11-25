@@ -25,13 +25,11 @@ export const useSocketStore = defineStore('socket', () => {
         }
       });
 
-      // Nový listener pre aktualizáciu členov kanála
       socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
         console.log('Channel users updated:', data.channelId)
         const {useChatStore} = await import('stores/chat');
         const chatStore = useChatStore();
 
-        // Refreshni zoznam len ak sa práve pozeráš na tento kanál
         if (data.channelId === chatStore.currentChannelId) {
           await chatStore.loadChannelUsers(data.channelId);
         }
@@ -44,6 +42,18 @@ export const useSocketStore = defineStore('socket', () => {
       socket.value.on('disconnect', (reason) => {
         console.warn('Socket disconnected:', reason)
       });
+
+      socket.value.on('channelDeleted', async ({ channelId }) => {
+        const { useChatStore } = await import('stores/chat')
+        const chatStore = useChatStore()
+
+        if (chatStore.currentChannelId === channelId) {
+          chatStore.currentChannelId = null
+          chatStore.messages.splice(0)
+        }
+
+        await chatStore.fetchChannels()
+      })
     }
   }
 
@@ -59,8 +69,13 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value?.emit('userJoinedChannel', { channelId })
   }
 
-  const notifyUserLeft = (channelId: number) => {
+  const notifyUserLeft = (channelId: number, isModerator: boolean) => {
     socket.value?.emit('userLeftChannel', { channelId })
+
+    if(isModerator) {
+      socket.value?.emit('deleteChannel', { channelId })
+
+    }
   }
 
   return { socket, init, joinChannel, sendMessage, notifyUserJoined, notifyUserLeft }
