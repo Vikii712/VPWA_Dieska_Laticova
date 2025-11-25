@@ -2,7 +2,7 @@
 import { useChatStore } from 'stores/chat'
 import { useAuthStore } from 'stores/auth'
 import {QInfiniteScroll} from "quasar";
-import {watch, nextTick, ref} from "vue";
+import {watch, nextTick, ref, onBeforeUnmount} from "vue";
 
 const items = ref([ {}, {}, {}, {}, {}, {}, {} ])
 const infiniteScroll = ref<QInfiniteScroll | null>(null)
@@ -18,8 +18,14 @@ function onLoad(index: number, done: (stop?: boolean) => void) {
   }, 1000)
 }
 
+const isUnmounted = ref(false)
+
+onBeforeUnmount(() => {
+  isUnmounted.value = true
+})
+
 watch(() => chat.messages.length, async (newLength, oldLength) => {
-  if (newLength !== oldLength) {
+  if (newLength !== oldLength && !isUnmounted.value) {
     await nextTick(() => {
       infiniteScroll.value?.resume()
     })

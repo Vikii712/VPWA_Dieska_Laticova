@@ -34,6 +34,8 @@ export const useChatStore = defineStore('chat', () => {
   const isLoadingMessages = ref(false)
 
   const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string}>>([])
+  const channelMessages = ref<Record<number, Message[]>>({});
+  const unreadChannels = ref<Record<number, number>>({})
 
   const currentChannel = computed(() =>
     channels.value.find(ch => ch.id === currentChannelId.value)
@@ -64,13 +66,22 @@ export const useChatStore = defineStore('chat', () => {
 
   async function loadChannel(channelId: number) {
     currentChannelId.value = channelId
-    messages.value = []
+    messages.value = channelMessages.value[channelId] || [];
     currentPage.value = 1
     hasMoreMessages.value = true
 
     await loadMessages()
     await loadChannelUsers(channelId)
     const socketStore = useSocketStore()
+
+    if (channelMessages.value[channelId]) {
+      messages.value = channelMessages.value[channelId];
+    }
+    currentChannelId.value = channelId;
+
+    if (unreadChannels.value[channelId]) {
+      unreadChannels.value[channelId] = 0;
+    }
 
     socketStore.joinChannel(channelId)
   }
@@ -159,7 +170,6 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       await fetchChannels()
-
       const channel = channels.value.find(ch => ch.id === result.channel.id)
 
       if (channel) {
@@ -221,6 +231,8 @@ export const useChatStore = defineStore('chat', () => {
     channels,
     currentChannelId,
     messages,
+    channelMessages,
+    unreadChannels,
     hasMoreMessages,
     isLoadingMessages,
     currentChannelUsers,
