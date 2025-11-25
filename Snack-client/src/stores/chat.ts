@@ -2,6 +2,7 @@ import {defineStore} from 'pinia'
 import {computed, nextTick, ref} from 'vue'
 import {api} from 'src/services/api'
 import {useSocketStore} from "stores/socketStore";
+import {useAuthStore} from "stores/auth";
 
 export interface Channel {
   id: number
@@ -156,6 +157,7 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     currentChannelId.value = channelId
+    unreadChannels.value[channelId] = 0
 
     if (unreadChannels.value[channelId]) {
       unreadChannels.value[channelId] = 0
@@ -271,6 +273,7 @@ export const useChatStore = defineStore('chat', () => {
 
   function addMessage(message: Message) {
     const channelId = message.channelId
+    const auth = useAuthStore()
 
     if (!channelMessages.value[channelId]) {
       channelMessages.value[channelId] = []
@@ -286,12 +289,15 @@ export const useChatStore = defineStore('chat', () => {
 
     console.log(`Message ${message.id} added to channel ${channelId}`)
 
-    if (channelId !== currentChannelId.value) {
+    if (
+      channelId !== currentChannelId.value &&
+      message.author.id !== auth.user?.id
+    ) {
       if (!unreadChannels.value[channelId]) {
         unreadChannels.value[channelId] = 0
       }
       unreadChannels.value[channelId]++
-    } else {
+    } else if (message.channelId === currentChannelId.value) {
       setTimeout(() => {
         window.dispatchEvent(new Event('new-message-received'))
       }, 50)

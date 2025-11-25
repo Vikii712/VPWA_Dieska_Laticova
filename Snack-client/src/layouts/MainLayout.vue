@@ -1,10 +1,12 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
+import {ref, computed, onMounted} from 'vue'
   import RightDrawer from "components/RightDrawer.vue";
   import LeftDrawer from "components/LeftDrawer.vue"
   import ChannelPage from "pages/ChannelPage.vue";
   import MemberList from "components/MemberList.vue";
   import {useChatStore} from "stores/chat";
+import {useSocketStore} from "stores/socketStore";
+import {useAuthStore} from "stores/auth";
 
   const rightDrawerOpen = ref<boolean>(false)
   const memberListOpen = ref(false)
@@ -26,6 +28,14 @@
   function toggleMemberList() {
     memberListOpen.value = !memberListOpen.value
   }
+
+onMounted(() => {
+  const auth = useAuthStore()
+  const socketStore = useSocketStore()
+  if (auth.token) {
+    socketStore.init(auth.token)
+  }
+})
 
 </script>
 

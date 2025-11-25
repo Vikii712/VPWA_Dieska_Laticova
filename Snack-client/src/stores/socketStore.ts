@@ -55,14 +55,26 @@ export const useSocketStore = defineStore('socket', () => {
 
       chatStore.addMessage(data)
 
-      if (data.channelId !== chatStore.currentChannelId) {
-        Notify.create({
-          type: 'info',
-          color: 'blue',
-          message: `New message in ${data.channelName || `channel #${data.channelId}`}`,
-          position: 'bottom',
-          timeout: 3000,
-        })
+      if (window.Notification && document.hidden) {
+        if (Notification.permission === 'granted') {
+          new Notification(
+            `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
+            {
+              body: `${data.author.nick}: ${data.content.slice(0, 80)}`,
+            }
+          )
+        } else if (Notification.permission !== 'denied') {
+          void Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification(
+                `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
+                {
+                  body: `${data.author.nick}: ${data.content.slice(0, 80)}`,
+                }
+              )
+            }
+          })
+        }
       }
     })
 
@@ -94,7 +106,7 @@ export const useSocketStore = defineStore('socket', () => {
 
       if (chatStore.currentChannelId === channelId) {
         chatStore.currentChannelId = null
-        chatStore.messages.splice(0)
+        chatStore.messages.splice(0, 0)
       }
 
       await chatStore.fetchChannels()
