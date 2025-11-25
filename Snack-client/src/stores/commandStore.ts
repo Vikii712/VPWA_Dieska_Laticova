@@ -1,15 +1,18 @@
 import { defineStore } from 'pinia'
 import { useChatStore } from './chat'
 import { api } from 'src/services/api'
+import { ref } from 'vue'
 
 
 export const useCommandStore = defineStore('command', () => {
   const chat = useChatStore()
 
+  const memberListDrawerOpen = ref(false)
+
   type CommandResult = {
     type: 'positive' | 'negative' | 'warning' | 'dialog'
     message: string
-  } | void
+  } | void | null
 
   async function processCommand(input: string): Promise<CommandResult> {
     const parts = input.trim().split(/\s+/)
@@ -24,6 +27,10 @@ export const useCommandStore = defineStore('command', () => {
         return await handleJoin(parts)
       case '/cancel':
         return { type: 'dialog' , message: 'leave' }
+      case '/list':
+        return openMemberList()
+      case '/quit':
+        return quitChannel()
       case '/invite':
         return await handleInvite(parts)
       case '/revoke':
@@ -31,6 +38,27 @@ export const useCommandStore = defineStore('command', () => {
       default:
         return { type: 'warning', message: `Unknown command: ${cmd}` }
     }
+  }
+
+  function quitChannel(): CommandResult {
+    if (!chat.currentChannelId) {
+      return { type: 'warning', message: 'You are not in a channel' }
+    }
+
+    chat.currentChannelId = null
+    chat.currentChannelUsers.splice(0, chat.currentChannelUsers.length)
+
+    memberListDrawerOpen.value = false
+
+    return null
+  }
+
+  function openMemberList(): CommandResult | null {
+    if (!chat.currentChannelId) {
+      return { type: 'warning', message: 'You must be in a channel to list members' }
+    }
+    memberListDrawerOpen.value = true
+    return null
   }
 
   async function handleJoin(parts: string[]): Promise<CommandResult> {
@@ -122,5 +150,6 @@ export const useCommandStore = defineStore('command', () => {
 
   return {
     processCommand,
+    memberListDrawerOpen
   }
 })

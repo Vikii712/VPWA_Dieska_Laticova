@@ -9,7 +9,7 @@ https://github.com/kurice/vpwa26
 
 [✓] používateľ vidí zoznam kanálov, v ktorých je členom
 
-[] pri opustení kanála, alebo trvalom vyhodení z kanála je daný kanál odobratý zo zoznamu
+[✓] pri opustení kanála, alebo trvalom vyhodení z kanála je daný kanál odobratý zo zoznamu
 
 [] pri pozvánke do kanála je daný kanál zvýraznený a topovaný
 
@@ -37,19 +37,19 @@ https://github.com/kurice/vpwa26
 
 [✓] nickName ako aj channelName sú unikátne
 
-[] správca môže kanál zatvoriť/zrušiť príkazom /quit
+[✓] správca môže kanál zatvoriť/zrušiť príkazom /quit
 
-[] používateľ môže zrušiť svoje členstvo v kanáli príkazom /cancel, ak tak spraví správca kanála, kanál zaniká
+[✓] používateľ môže zrušiť svoje členstvo v kanáli príkazom /cancel, ak tak spraví správca kanála, kanál zaniká
 
-[] správu v kanáli je možné adresovať konkrétnemu používateľovi cez príkaz @nickname
+[✓] správu v kanáli je možné adresovať konkrétnemu používateľovi cez príkaz @nickname
 
-[] správa je zvýraznená danému používateľovi v zozname správ
+[✓] správa je zvýraznená danému používateľovi v zozname správ
 
-[] používateľ si môže pozrieť kompletnú históriu správ
+[✓] používateľ si môže pozrieť kompletnú históriu správ
 
 [] efektívny inifinite scroll
 
-[] používateľ je informovaný o každej novej správe prostredníctvom notifikácie
+[✓] používateľ je informovaný o každej novej správe prostredníctvom notifikácie
 
 [] notifikácia sa vystavuje iba ak aplikácia nie je v stave "visible" (pozrite quasar docu App Visibility)
 
@@ -65,7 +65,7 @@ https://github.com/kurice/vpwa26
 
 [] ak je nastavený offline stav, neprichádzajú používateľovi správy, po prepnutí do online sú kanály automaticky aktualizované
 
-[] používateľ si môže pozrieť zoznam členov kanála (ak je tiež členom kanála) príkazom /list
+[✓] používateľ si môže pozrieť zoznam členov kanála (ak je tiež členom kanála) príkazom /list
 
 [] ak má používateľ aktívny niektorý z kanálov (nachádza sa v okne správ pre daný kanál) vidí v stavovej lište informáciu o tom, kto aktuálne píše správu (napr. Ed is typing)
 
