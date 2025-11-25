@@ -8,6 +8,7 @@ app.ready(() => {
       origin: '*',
     },
   })
+
   io?.on('connection', (socket) => {
     console.log('A new connection', socket.id)
 
@@ -23,5 +24,10 @@ app.ready(() => {
       callback({status: 'ok'});
     });
 
+    // Nový event pre notifikáciu o novom členovi
+    socket.on('userJoinedChannel', ({ channelId }) => {
+      // Pošli update všetkým v miestnosti (okrem odosielateľa by bolo `socket.to`)
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+    })
   })
 })

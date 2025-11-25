@@ -24,6 +24,19 @@ export const useSocketStore = defineStore('socket', () => {
           window.dispatchEvent(new Event('messages-loaded'));
         }
       });
+
+      // Nový listener pre aktualizáciu členov kanála
+      socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
+        console.log('Channel users updated:', data.channelId)
+        const {useChatStore} = await import('stores/chat');
+        const chatStore = useChatStore();
+
+        // Refreshni zoznam len ak sa práve pozeráš na tento kanál
+        if (data.channelId === chatStore.currentChannelId) {
+          await chatStore.loadChannelUsers(data.channelId);
+        }
+      });
+
       socket.value.on('connect_error', (err) => {
         console.error('Problem with connection to the server::', err)
       });
@@ -42,6 +55,9 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value?.emit('sendMessage', { channelId, message })
   }
 
+  const notifyUserJoined = (channelId: number) => {
+    socket.value?.emit('userJoinedChannel', { channelId })
+  }
 
-  return { socket, init, joinChannel, sendMessage}
+  return { socket, init, joinChannel, sendMessage, notifyUserJoined }
 })

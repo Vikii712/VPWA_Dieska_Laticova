@@ -138,6 +138,57 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function joinOrCreateChannel(name: string, type: 'public' | 'private' = 'public') {
+    try {
+      // Nechaj server rozhodnúť či kanál existuje a či sa dá pripojiť
+      const result = await api<{
+        channel: {
+          id: number
+          name: string
+          public: boolean
+          moderator_id: number
+        }
+        joined: boolean
+      }>('POST', '/channels', {
+        name: name.trim(),
+        type: type,
+      })
+
+      // Aktualizuj lokálny zoznam kanálov
+      await fetchChannels()
+
+      // Načítaj nový/existujúci kanál
+      const channel = channels.value.find(ch => ch.id === result.channel.id)
+
+      if (channel) {
+        await loadChannel(channel.id)
+
+        // Ak sa používateľ pripojil do existujúceho public kanála (nie vytvoril nový)
+        if (result.joined && channel.public) {
+          const socketStore = useSocketStore()
+          socketStore.notifyUserJoined(channel.id)
+        }
+
+        return {
+          channel: channel,
+          joined: result.joined
+        }
+      }
+
+      throw new Error('Failed to load channel after join.')
+
+    } catch (error) {
+      // Ak je to ApiError (z nášho API wrappera), použij jeho správu
+      if (error instanceof Error) {
+        throw error // Prehoď pôvodnú error správu
+      }
+
+      // Pre iné typy chýb
+      console.error('Unexpected error:', error)
+      throw new Error('Failed to join or create channel.')
+    }
+  }
+
   async function sendMessage(content: string) {
     if (!currentChannelId.value) return
 
@@ -177,7 +228,8 @@ export const useChatStore = defineStore('chat', () => {
     currentChannel,
     moderatorId,
     createChannel,
-
+    joinOrCreateChannel,
+    loadChannelUsers,
     fetchChannels,
     loadChannel,
     sendMessage,

@@ -72,6 +72,15 @@ function handleApiError(url: string, status: number, data: ApiErrorResponse): ne
     }
   }
 
+  // Handling pre channel errory
+  if (url === '/channels' && status === 400 && data.message) {
+    if (data.message.includes('private')) {
+      throw new ApiError('This channel is private and you cannot join it.', status, data);
+    }
+    // Pre ostatné channel errory použi server správu
+    throw new ApiError(data.message, status, data);
+  }
+
   if (data.errors && Array.isArray(data.errors)) {
     const errorMessages = data.errors.map((err: ValidationError) => err.message).join(', ');
     throw new ApiError(errorMessages, status, data);

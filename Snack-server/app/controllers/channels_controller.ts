@@ -125,32 +125,73 @@ export default class ChannelsController {
 
     const isPublic = (type === 'public')
 
-    const exists = await db
-      .from('channels')
-      .where('name', name)
-      .andWhere('moderator_id', user.id).first()
+    // Najdi kanál podľa mena
+    let channel = await db.from('channels').where('name', name).first()
 
-    if(exists) {
-      return response.badRequest({ message: 'You already have a channel with this name.' })
+    if(channel) {
+      // Najprv zisti či je užívateľ už členom
+      const isMember = await db
+        .from('channel_users')
+        .where('channel_id', channel.id)
+        .where('user_id', user.id)
+        .first()
+
+      // Ak JE členom, vráť kanál (nech je private alebo public)
+      if(isMember) {
+        return response.ok({
+          channel: {
+            id: channel.id,
+            name: channel.name,
+            public: channel.public,
+            moderator_id: channel.moderator_id,
+          },
+          joined: true
+        })
+      }
+
+      // Ak NIE JE členom a kanál je private, reject
+      if (!channel.public) {
+        return response.badRequest({ message: 'Channel is private.' })
+      }
+
+      // Ak NIE JE členom a kanál je public, pridaj ho
+      await db.table('channel_users').insert({
+        channel_id: channel.id,
+        user_id: user.id
+      })
+
+      return response.ok({
+        channel: {
+          id: channel.id,
+          name: channel.name,
+          public: channel.public,
+          moderator_id: channel.moderator_id,
+        },
+        joined: true
+      })
     }
 
-    const channel = await Channel.create({
+    // Ak neexistuje, vytvor kanál
+    channel = await Channel.create({
       name,
       public: isPublic,
       moderatorId: user.id,
     })
 
-    await db.table('channel_users').insert({ channel_id: channel.id, user_id: user.id})
+    await db.table('channel_users').insert({
+      channel_id: channel.id,
+      user_id: user.id
+    })
 
     return response.ok({
       channel: {
         id: channel.id,
         name: channel.name,
         public: channel.public,
-        moderator_id: channel.moderatorId,
-      }
+        moderator_id: channel.moderatorId, // Zjednotené pomenovanie
+      },
+      joined: false
     })
-
   }
 
   async leaveOrDeleteChannel({auth, params, response}: HttpContext) {
