@@ -13,7 +13,7 @@ https://github.com/kurice/vpwa26
 
 [] pri pozvánke do kanála je daný kanál zvýraznený a topovaný
 
-[] v zozname môže cez používateľské rozhranie kanál vytvoriť, opustiť, a ak je správcom aj zrušiť
+[✓] v zozname môže cez používateľské rozhranie kanál vytvoriť, opustiť, a ak je správcom aj zrušiť
 
 [✓] dva typy kanálov - súkromný (private channel) a verejný kanál (public channel)
 

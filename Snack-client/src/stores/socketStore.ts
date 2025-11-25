@@ -23,17 +23,21 @@ export const useSocketStore = defineStore('socket', () => {
         if (!chatStore.channelMessages[message.channelId]) {
           chatStore.channelMessages[message.channelId] = [];
         }
-        chatStore.channelMessages[message.channelId].push(message);
+        chatStore.channelMessages[message.channelId]!.push(message);
 
         if (message.channelId === chatStore.currentChannelId) {
           chatStore.messages.push(message);
           window.dispatchEvent(new Event('messages-loaded'));
         } else {
+          if (!chatStore.unreadChannels[message.channelId]) {
+            chatStore.unreadChannels[message.channelId] = 0;
+          }
+          chatStore.unreadChannels[message.channelId]!++;
           Notify.create({
             type: 'info',
             color: 'blue',
             message: `New message in channel ${message.channelName ?? message.channelId}`,
-            position: 'top-left',
+            position: 'bottom',
           });
         }
       });
