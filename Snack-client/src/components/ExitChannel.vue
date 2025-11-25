@@ -23,7 +23,7 @@ async function confirmExit() {
   await router.push('/main');
   chat.currentChannelId = null
   await chat.fetchChannels()
-  await chat.leaveChannel(props.n)
+  chat.leaveChannel(props.n)
 }
 
 </script>

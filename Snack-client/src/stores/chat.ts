@@ -34,6 +34,7 @@ export const useChatStore = defineStore('chat', () => {
   const isLoadingMessages = ref(false)
 
   const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string}>>([])
+  const channelMessages = ref<Record<number, Message[]>>({});
 
   const currentChannel = computed(() =>
     channels.value.find(ch => ch.id === currentChannelId.value)
@@ -64,7 +65,7 @@ export const useChatStore = defineStore('chat', () => {
 
   async function loadChannel(channelId: number) {
     currentChannelId.value = channelId
-    messages.value = []
+    messages.value = channelMessages.value[channelId] || [];
     currentPage.value = 1
     hasMoreMessages.value = true
 
@@ -138,9 +139,9 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function leaveChannel(channelId: number) {
+  function leaveChannel(channelId: number) {
     const socketStore = useSocketStore()
-    await socketStore.notifyUserLeft(channelId)
+    socketStore.notifyUserLeft(channelId)
   }
 
   async function joinOrCreateChannel(name: string, type: 'public' | 'private' = 'public') {
@@ -159,10 +160,7 @@ export const useChatStore = defineStore('chat', () => {
         type: type,
       })
 
-      // Aktualizuj lokálny zoznam kanálov
       await fetchChannels()
-
-      // Načítaj nový/existujúci kanál
       const channel = channels.value.find(ch => ch.id === result.channel.id)
 
       if (channel) {
@@ -182,12 +180,10 @@ export const useChatStore = defineStore('chat', () => {
       throw new Error('Failed to load channel after join.')
 
     } catch (error) {
-      // Ak je to ApiError (z nášho API wrappera), použij jeho správu
       if (error instanceof Error) {
-        throw error // Prehoď pôvodnú error správu
+        throw error
       }
 
-      // Pre iné typy chýb
       console.error('Unexpected error:', error)
       throw new Error('Failed to join or create channel.')
     }
@@ -202,6 +198,7 @@ export const useChatStore = defineStore('chat', () => {
     if (result && result.message) {
       const { useSocketStore } = await import('stores/socketStore');
       const socketStore = useSocketStore();
+      socketStore.init()
 
       socketStore.socket?.emit('sendMessage', {
         channelId: currentChannelId.value,
@@ -226,6 +223,7 @@ export const useChatStore = defineStore('chat', () => {
     channels,
     currentChannelId,
     messages,
+    channelMessages,
     hasMoreMessages,
     isLoadingMessages,
     currentChannelUsers,
