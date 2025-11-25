@@ -16,7 +16,7 @@ app.ready(() => {
       socket.join(`channel-${channelId}`)
     })
 
-    socket.on('sendMessage', async ({ channelId, message }, callback) => {
+    socket.on('sendMessage', async ({channelId, message}, callback) => {
       io.to(`channel-${channelId}`).emit('newMessage', {
         ...message,
         channelId
@@ -24,10 +24,14 @@ app.ready(() => {
       callback({status: 'ok'});
     });
 
-    // Nový event pre notifikáciu o novom členovi
-    socket.on('userJoinedChannel', ({ channelId }) => {
-      // Pošli update všetkým v miestnosti (okrem odosielateľa by bolo `socket.to`)
-      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+    socket.on('userJoinedChannel', ({channelId}) => {
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', {channelId})
     })
+
+    socket.on('userLeftChannel', ({channelId}) => {
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', {channelId})
+    })
+
+
   })
 })

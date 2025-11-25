@@ -59,5 +59,9 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value?.emit('userJoinedChannel', { channelId })
   }
 
-  return { socket, init, joinChannel, sendMessage, notifyUserJoined }
+  const notifyUserLeft = (channelId: number) => {
+    socket.value?.emit('userLeftChannel', { channelId })
+  }
+
+  return { socket, init, joinChannel, sendMessage, notifyUserJoined, notifyUserLeft }
 })

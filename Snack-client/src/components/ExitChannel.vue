@@ -5,6 +5,7 @@ import {useChatStore} from "stores/chat";
 import { useRouter } from 'vue-router'
 import { useAuthStore } from 'stores/auth'
 
+const props = defineProps<{ n: number }>();
 const exitDialog = ref<boolean>(false);
 const chat = useChatStore()
 const auth = useAuthStore()
@@ -12,7 +13,6 @@ const router = useRouter()
 const isModerator = computed(() => {
   const currentUserId = auth.user?.id;
   const moderatorId = chat.currentChannel?.moderatorId;
-  //console.log(moderatorId, currentUserId);
   return currentUserId != null && moderatorId != null && currentUserId === moderatorId;
 });
 
@@ -23,6 +23,7 @@ async function confirmExit() {
   await router.push('/main');
   chat.currentChannelId = null
   await chat.fetchChannels()
+  await chat.leaveChannel(props.n)
 }
 
 </script>

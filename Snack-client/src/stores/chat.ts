@@ -138,6 +138,11 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function leaveChannel(channelId: number) {
+    const socketStore = useSocketStore()
+    await socketStore.notifyUserLeft(channelId)
+  }
+
   async function joinOrCreateChannel(name: string, type: 'public' | 'private' = 'public') {
     try {
       // Nechaj server rozhodnúť či kanál existuje a či sa dá pripojiť
@@ -163,7 +168,6 @@ export const useChatStore = defineStore('chat', () => {
       if (channel) {
         await loadChannel(channel.id)
 
-        // Ak sa používateľ pripojil do existujúceho public kanála (nie vytvoril nový)
         if (result.joined && channel.public) {
           const socketStore = useSocketStore()
           socketStore.notifyUserJoined(channel.id)
@@ -229,6 +233,7 @@ export const useChatStore = defineStore('chat', () => {
     moderatorId,
     createChannel,
     joinOrCreateChannel,
+    leaveChannel,
     loadChannelUsers,
     fetchChannels,
     loadChannel,
