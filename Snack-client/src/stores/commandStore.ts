@@ -116,7 +116,17 @@ export const useCommandStore = defineStore('command', () => {
     }
 
     try {
-      await api('POST', `/channels/${chat.currentChannelId}/invite`, { nickName })
+      const result = await api<{ message: string; targetUserId: number }>(
+        'POST',
+        `/channels/${chat.currentChannelId}/invite`,
+        { nickName }
+      )
+
+      if (result.targetUserId) {
+        console.log('📤 Emitting userInvited:', { channelId: chat.currentChannelId, targetUserId: result.targetUserId })
+        socketStore.notifyUserInvited(chat.currentChannelId, result.targetUserId)
+      }
+
       return { type: 'positive', message: `${nickName} has been invited to the channel.` }
     } catch (error) {
       console.error(error)
@@ -151,13 +161,13 @@ export const useCommandStore = defineStore('command', () => {
     try {
       const targetUserId = await chat.revokeUser(chat.currentChannelId, targetNick)
 
-      console.log('🔍 Got targetUserId from API:', targetUserId)
+      console.log('Got targetUserId from API:', targetUserId)
 
       if (targetUserId) {
-        console.log('📤 Emitting userRevoked:', { channelId: chat.currentChannelId, targetUserId })
+        console.log(' Emitting userRevoked:', { channelId: chat.currentChannelId, targetUserId })
         socketStore.notifyUserRevoked(chat.currentChannelId, targetUserId)
       } else {
-        console.warn('⚠️ No targetUserId returned from API!')
+        console.warn('No targetUserId returned from API!')
       }
 
       return { type: 'positive', message: `${targetNick} has been removed from the channel.` }
@@ -197,13 +207,13 @@ export const useCommandStore = defineStore('command', () => {
     try {
       const targetUserId = await chat.kickUser(chat.currentChannelId, targetNick)
 
-      console.log('🔍 Got targetUserId from API:', targetUserId)
+      console.log(' Got targetUserId from API:', targetUserId)
 
       if (targetUserId) {
-        console.log('📤 Emitting userKicked:', { channelId: chat.currentChannelId, targetUserId })
+        console.log( 'Emitting userKicked:', { channelId: chat.currentChannelId, targetUserId })
         socketStore.notifyUserKicked(chat.currentChannelId, targetUserId)
       } else {
-        console.warn('⚠️ No targetUserId returned from API!')
+        console.warn('No targetUserId returned from API!')
       }
 
       return { type: 'positive', message: `${targetNick} has been kicked from the channel.` }

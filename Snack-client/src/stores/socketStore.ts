@@ -174,6 +174,28 @@ export const useSocketStore = defineStore('socket', () => {
       }
     })
 
+    socket.value.on('userWasInvited', async ({ channelId }) => {
+      const auth = useAuthStore()
+      const { useChatStore } = await import('stores/chat')
+      const chatStore = useChatStore()
+
+      console.log('🔴 CLIENT: userWasInvited received:', {
+        channelId,
+        currentUserId: auth.user?.id
+      })
+
+      await chatStore.fetchChannels()
+
+      Notify.create({
+        type: 'info',
+        color: 'orange',
+        icon: 'mail',
+        message: 'You have been invited to a channel',
+        position: 'top',
+        timeout: 4000,
+      })
+    })
+
     socket.value.on('userWasKicked', async ({ channelId, userId }) => {
       const auth = useAuthStore()
       const { useChatStore } = await import('stores/chat')
@@ -246,6 +268,11 @@ export const useSocketStore = defineStore('socket', () => {
     }
   }
 
+  const notifyUserInvited = (channelId: number, targetUserId: number) => {
+    console.log('🚀 notifyUserInvited called:', { channelId, targetUserId, connected: connected.value })
+    socket.value?.emit('userInvited', { channelId, targetUserId })
+  }
+
   const notifyUserRevoked = (channelId: number, targetUserId: number) => {
     console.log('🚀 notifyUserRevoked called:', { channelId, targetUserId, connected: connected.value })
     socket.value?.emit('userRevoked', { channelId, targetUserId })
@@ -294,5 +321,6 @@ export const useSocketStore = defineStore('socket', () => {
     init,
     notifyUserRevoked,
     notifyUserKicked,
+    notifyUserInvited,
   }
 })

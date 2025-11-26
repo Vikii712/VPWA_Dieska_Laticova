@@ -57,6 +57,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
     pivotTable: 'channel_users',
     pivotForeignKey: 'user_id',
     pivotRelatedForeignKey: 'channel_id',
+    pivotColumns: ['invited'],
     pivotTimestamps: true,
   })
   declare channels: ManyToMany<typeof Channel>

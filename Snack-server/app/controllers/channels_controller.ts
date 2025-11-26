@@ -11,7 +11,9 @@ export default class ChannelsController {
   async getChannels({ auth, response }: HttpContext) {
     const user = auth.getUserOrFail()
 
-    await user.load('channels')
+    await user.load('channels', (query) => {
+      query.pivotColumns(['invited'])
+    })
 
     return response.ok({
       channels: user.channels.map(channel => ({
@@ -19,6 +21,7 @@ export default class ChannelsController {
         name: channel.name,
         public: channel.public,
         moderatorId: channel.moderatorId,
+        invited: channel.$extras.pivot_invited
       }))
     })
   }
@@ -83,6 +86,7 @@ export default class ChannelsController {
       .select(['users.id', 'users.nick', 'users.activity_status'])
       .join('channel_users', 'users.id', '=', 'channel_users.user_id')
       .where('channel_users.channel_id', channelId)
+      .where('channel_users.invited', false)
 
     return response.json(users)
   }
@@ -348,5 +352,81 @@ export default class ChannelsController {
       message: `${targetNick} has been kicked`,
       targetUserId: targetUser.id
     })
+  }
+
+
+  async inviteUser({ auth, params, request, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const channelId = params.id
+    const targetNick = request.input('nickName')
+
+    if (!targetNick) {
+      return response.badRequest({ message: 'No target user specified.' })
+    }
+
+    const channel = await Channel.find(channelId)
+    if (!channel) {
+      return response.notFound({ message: 'Channel not found.' })
+    }
+
+    if (!channel.public && channel.moderatorId !== user.id) {
+      return response.forbidden({ message: 'Only the moderator can invite users to private channels.' })
+    }
+
+    const targetUser = await User.query().where('nick', targetNick).first()
+    if (!targetUser) {
+      return response.notFound({ message: 'User not found.' })
+    }
+
+    const existing = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', targetUser.id)
+      .first()
+
+    if (existing) {
+      if (existing.invited) {
+        return response.badRequest({ message: `${targetNick} already has a pending invitation.` })
+      }
+      return response.badRequest({ message: `${targetNick} is already a member.` })
+    }
+
+    await db.table('channel_users').insert({
+      channel_id: channelId,
+      user_id: targetUser.id,
+      invited: true
+    })
+
+    return response.ok({
+      message: `${targetNick} has been invited.`,
+      targetUserId: targetUser.id
+    })
+  }
+
+  async acceptInvite({ auth, params, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const channelId = params.id
+
+    const channelUser = await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .first()
+
+    if (!channelUser) {
+      return response.notFound({ message: 'Invitation not found.' })
+    }
+
+    if (!channelUser.invited) {
+      return response.badRequest({ message: 'You are already a member.' })
+    }
+
+    await db
+      .from('channel_users')
+      .where('channel_id', channelId)
+      .where('user_id', user.id)
+      .update({ invited: false })
+
+    return response.ok({ message: 'Invitation accepted.' })
   }
 }

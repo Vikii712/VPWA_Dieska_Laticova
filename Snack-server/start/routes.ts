@@ -30,3 +30,6 @@ router.post('/user/status', [ChannelsController, 'updateUserStatus']).use(middle
 
 router.delete('/channels/:id/revoke', [ChannelsController, 'revokeUser']).use(middleware.auth())
 router.delete('/channels/:id/kick', [ChannelsController, 'kickUser']).use(middleware.auth())
+
+router.post('/channels/:id/invite', [ChannelsController, 'inviteUser']).use(middleware.auth())
+router.post('/channels/:id/accept-invite', [ChannelsController, 'acceptInvite']).use(middleware.auth())

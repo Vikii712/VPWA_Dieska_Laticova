@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import AddChannel from "components/AddChannel.vue";
 import ExitChannel from "components/ExitChannel.vue";
+import JoinChannel from "components/JoinChannel.vue";  // Import
 import { useChatStore } from "stores/chat";
-import {computed, onMounted} from "vue";
+import { computed, onMounted } from "vue";
 
 const chat = useChatStore()
 
@@ -13,30 +14,39 @@ onMounted(async () => {
 })
 
 async function selectChannel(channelId: number) {
+  const channel = chat.channels.find(c => c.id === channelId)
+
+  // Ak je invited, pri kliknutí sa nič nestane (len tlačidlo Join funguje)
+  if (channel?.invited) {
+    return
+  }
+
   await chat.loadChannel(channelId)
 }
 
 const sortedChannels = computed(() => {
   return [...chat.channels].sort((a, b) => {
-    const unreadA = chat.unreadChannels[a.id] || 0;
-    const unreadB = chat.unreadChannels[b.id] || 0;
+    // 1. Invited channels first
+    if (a.invited && !b.invited) return -1
+    if (!a.invited && b.invited) return 1
 
-    if (unreadA > 0 && unreadB === 0) return -1;
-    if (unreadB > 0 && unreadA === 0) return 1;
-    return 0;
-  });
-});
+    // 2. Then by unread messages
+    const unreadA = chat.unreadChannels[a.id] || 0
+    const unreadB = chat.unreadChannels[b.id] || 0
+
+    if (unreadA > 0 && unreadB === 0) return -1
+    if (unreadB > 0 && unreadA === 0) return 1
+
+    return 0
+  })
+})
 </script>
-
-
 
 <template>
   <q-drawer
     :model-value="true"
-    :mini = "props.mini"
-
+    :mini="props.mini"
     side="left"
-
     class="bg-deep-purple-7 column"
   >
     <q-item :class="{'bg-purple-10': !props.mini}">
@@ -54,17 +64,28 @@ const sortedChannels = computed(() => {
           clickable
           v-ripple
           @click="selectChannel(channel.id)"
-          :active="chat.currentChannelId === channel.id"
+          :active="!channel.invited && chat.currentChannelId === channel.id"
           active-class="bg-purple-9"
         >
           <q-avatar class="q-pl-xs">
-            <!--<q-badge floating color="red" v-if="n === 1">invite</q-badge> -->
-            <!--<q-badge floating  color="teal"  v-if="n === 2 || n === 3">new</q-badge>-->
             <img alt="" src="../assets/images/channel_icon.svg" width="50" />
-            <q-badge v-if="chat.unreadChannels[channel.id]! > 0"
-                     color="seal-10"
-                     floating
-                     class="q-ml-sm"
+
+            <!-- Invite badge má prioritu -->
+            <q-badge
+              v-if="channel.invited"
+              color="orange"
+              floating
+              class="q-ml-sm"
+            >
+              invite
+            </q-badge>
+
+            <!-- Inak new badge -->
+            <q-badge
+              v-else-if="chat.unreadChannels[channel.id]! > 0"
+              color="teal-10"
+              floating
+              class="q-ml-sm"
             >
               new
             </q-badge>
@@ -74,19 +95,19 @@ const sortedChannels = computed(() => {
             <q-item-label>{{ channel.name }}</q-item-label>
           </q-item-section>
 
-          <ExitChannel :n="channel.id" />
-         <!-- <JoinChannel v-else :name="'Channel ' + n"/> -->
+          <JoinChannel
+            v-if="channel.invited"
+            :channel-id="channel.id"
+            :channel-name="channel.name"
+          />
+          <ExitChannel
+            v-else
+            :n="channel.id"
+          />
         </q-item>
-
-
       </q-list>
     </q-scroll-area>
 
-
     <AddChannel />
-
   </q-drawer>
 </template>
-
-<style scoped>
-</style>

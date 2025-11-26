@@ -26,6 +26,7 @@ export default class Channel extends BaseModel {
   })
   declare moderator: BelongsTo<typeof User>
 
+
   @hasMany(() => Message, {
     foreignKey: "channelId",
   })
@@ -40,6 +41,7 @@ export default class Channel extends BaseModel {
     pivotTable: 'channel_users',
     pivotForeignKey: 'channel_id',
     pivotRelatedForeignKey: 'user_id',
+    pivotColumns: ['invited'],
     pivotTimestamps: true,
   })
   declare users: ManyToMany<typeof User>

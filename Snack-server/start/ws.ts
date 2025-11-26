@@ -60,6 +60,19 @@ app.ready(() => {
       }
     })
 
+    socket.on('userInvited', async ({ channelId, targetUserId }) => {
+      console.log('🟢 SERVER: userInvited received:', { channelId, targetUserId })
+
+      const targetSockets = getUserSockets(targetUserId)
+      for (const socketId of targetSockets) {
+        io.to(socketId).emit('userWasInvited', {
+          channelId
+        })
+      }
+
+      console.log('🟢 SERVER: Emitted userWasInvited to user ' + targetUserId)
+    })
+
     socket.on('joinChannel', ({ userId: joinUserId, channelId }: { userId: number; channelId: number }) => {
       console.log(`joinChannel from user:`, userId, 'socket:', socket.id, 'channel:', channelId)
       if (!userSockets[joinUserId]) userSockets[joinUserId] = []

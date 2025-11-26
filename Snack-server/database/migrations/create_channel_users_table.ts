@@ -23,9 +23,13 @@ export default class extends BaseSchema {
         .inTable('channels')
         .onDelete('CASCADE')
 
+      table
+        .boolean('invited')
+        .defaultTo(false)
+        .notNullable()
+
       table.unique(['user_id', 'channel_id'])
 
-      // Timestamps - pridané!
       table.timestamp('created_at').defaultTo(this.now()).notNullable()
       table.timestamp('updated_at').nullable()
     })

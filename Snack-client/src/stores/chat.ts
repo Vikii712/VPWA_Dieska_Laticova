@@ -10,6 +10,7 @@ export interface Channel {
   public: number | boolean
   moderatorId: number
   lastActiveAt?: string
+  invited?: boolean
 }
 
 export interface Mention {
@@ -157,6 +158,15 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function loadChannel(channelId: number) {
+    const channel = channels.value.find(c => c.id === channelId)
+    if (!channel) return
+
+    if (channel.invited) {
+      console.log('User invited but not accepted yet, skipping message load')
+      currentChannelId.value = channelId
+      return
+    }
+
     if (currentChannelId.value) {
       const socketStore = useSocketStore()
       socketStore.leaveChannel(currentChannelId.value)
@@ -165,12 +175,7 @@ export const useChatStore = defineStore('chat', () => {
     currentChannelId.value = channelId
     unreadChannels.value[channelId] = 0
 
-    if (unreadChannels.value[channelId]) {
-      unreadChannels.value[channelId] = 0
-    }
-
     await loadChannelUsers(channelId)
-
     if (!channelMessages.value[channelId] || channelMessages.value[channelId].length === 0) {
       initChannelMeta(channelId)
       await loadMessages(channelId, 1)
@@ -182,6 +187,7 @@ export const useChatStore = defineStore('chat', () => {
     await nextTick()
     window.dispatchEvent(new Event('channel-switched'))
   }
+
 
   async function createChannel(name: string, type: 'public' | 'private' = 'public') {
     if (!name.trim()) {
@@ -385,6 +391,21 @@ export const useChatStore = defineStore('chat', () => {
     return message.mentions.some(mention => mention.mentionedId === userId)
   }
 
+  async function acceptInvite(channelId: number) {
+    try {
+      await api('POST', `/channels/${channelId}/accept-invite`)
+      await fetchChannels()
+
+      const socketStore = useSocketStore()
+      socketStore.notifyUserJoined(channelId)
+
+      return true
+    } catch (error) {
+      console.error('Error accepting invite:', error)
+      throw error
+    }
+  }
+
   return {
     channels,
     currentChannelId,
@@ -413,5 +434,6 @@ export const useChatStore = defineStore('chat', () => {
     isUserMentioned,
     revokeUser,
     kickUser,
+    acceptInvite,
   }
 })

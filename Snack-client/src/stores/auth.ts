@@ -9,6 +9,7 @@ interface User {
   lastName: string;
   email: string;
   activity_status: string;
+  invited: boolean;
 }
 
 interface AuthResponse {
