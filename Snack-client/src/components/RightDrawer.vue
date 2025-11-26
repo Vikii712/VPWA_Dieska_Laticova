@@ -8,7 +8,7 @@ const auth = useAuthStore();
 const router = useRouter();
 
 const state = ref<string>('offline')
-const notifType = ref<string>('none')
+const notifType = ref<'all' | 'mentioned' | 'none'>('all')
 const props = defineProps<{modelValue: boolean}>()
 const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
 
@@ -30,11 +30,16 @@ watch(state, async (newStatus) => {
   await auth.updateStatus(newStatus)
 })
 
+watch(notifType, (newPref) => {
+  auth.setNotificationPreference(newPref)
+})
+
 onMounted(async () => {
   await auth.me()
   if (auth.user?.activity_status) {
     state.value = auth.user.activity_status
   }
+  notifType.value = auth.notificationPreference
 })
 
 async function logout() {

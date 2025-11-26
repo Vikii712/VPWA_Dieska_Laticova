@@ -58,11 +58,9 @@ export const useSocketStore = defineStore('socket', () => {
     })
 
     socket.value.on('newMessage', async (data: Message & { channelName?: string }) => {
-      const { useChatStore } = await import('stores/chat')
+      const {useChatStore} = await import('stores/chat')
       const chatStore = useChatStore()
       const authStore = useAuthStore()
-
-      const isDND = authStore.user?.activity_status === 'away'
 
       console.log('Received new message:', data)
 
@@ -75,7 +73,17 @@ export const useSocketStore = defineStore('socket', () => {
 
       const isMentioned = data.mentions?.some(m => m.mentionedId === authStore.user?.id)
 
-      if(isDND) {
+      const notifPref = authStore.notificationPreference
+
+      if (notifPref === 'none') {
+        return
+      }
+
+      if (authStore.isDND) {
+        return
+      }
+
+      if (notifPref === 'mentioned' && !isMentioned) {
         return
       }
 
@@ -83,7 +91,7 @@ export const useSocketStore = defineStore('socket', () => {
         Notify.create({
           type: isMentioned ? 'warning' : 'info',
           color: isMentioned ? 'yellow-8' : 'blue',
-          ...(isMentioned && { icon: 'alternate_email' }),
+          ...(isMentioned && {icon: 'alternate_email'}),
           message: isMentioned
             ? `${data.author.nick} mentioned you in ${data.channelName || `channel #${data.channelId}`}`
             : `New message in ${data.channelName || `channel #${data.channelId}`}`,
@@ -104,14 +112,14 @@ export const useSocketStore = defineStore('socket', () => {
         if (Notification.permission === 'granted') {
           new Notification(
             `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
-            { body: `${data.author.nick}: ${data.content.slice(0, 80)}` }
+            {body: `${data.author.nick}: ${data.content.slice(0, 80)}`}
           )
         } else if (Notification.permission !== 'denied') {
           void Notification.requestPermission().then(permission => {
             if (permission === 'granted') {
               new Notification(
                 `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
-                { body: `${data.author.nick}: ${data.content.slice(0, 80)}` }
+                {body: `${data.author.nick}: ${data.content.slice(0, 80)}`}
               )
             }
           })
@@ -136,7 +144,7 @@ export const useSocketStore = defineStore('socket', () => {
         return
       }
 
-      const { useChatStore } = await import('stores/chat')
+      const {useChatStore} = await import('stores/chat')
       const chatStore = useChatStore()
 
       if (data.channelId === chatStore.currentChannelId) {
@@ -147,15 +155,15 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value.on('userStatusUpdate', async (data: { userId: number; status: string; channelId: number }) => {
       console.log('User status updated:', data)
 
-      const { useChatStore } = await import('stores/chat')
+      const {useChatStore} = await import('stores/chat')
       const chatStore = useChatStore()
 
       chatStore.updateUserStatus(data.userId, data.status)
     })
 
-    socket.value.on('channelDeleted', async ({ channelId }) => {
+    socket.value.on('channelDeleted', async ({channelId}) => {
       const authStore = useAuthStore()
-      const { useChatStore } = await import('stores/chat')
+      const {useChatStore} = await import('stores/chat')
       const chatStore = useChatStore()
 
       if (chatStore.currentChannelId === channelId) {
@@ -178,9 +186,9 @@ export const useSocketStore = defineStore('socket', () => {
       console.warn('Socket disconnected:', reason)
     })
 
-    socket.value.on('userWasRevoked', async ({ channelId, userId }) => {
+    socket.value.on('userWasRevoked', async ({channelId, userId}) => {
       const auth = useAuthStore()
-      const { useChatStore } = await import('stores/chat')
+      const {useChatStore} = await import('stores/chat')
       const chatStore = useChatStore()
 
       console.log('CLIENT: userWasRevoked received:', {
@@ -197,38 +205,42 @@ export const useSocketStore = defineStore('socket', () => {
         }
         await chatStore.fetchChannels()
 
-        Notify.create({
-          type: 'negative',
-          message: 'You have been removed from the channel',
-          position: 'top',
-          timeout: 3000,
-        })
+        if (auth.isOnline && !auth.isDND) {
+          Notify.create({
+            type: 'negative',
+            message: 'You have been removed from the channel',
+            position: 'top',
+            timeout: 3000,
+          })
+        }
       } else if (chatStore.currentChannelId === channelId) {
         console.log('CLIENT: Someone else was revoked, reloading users...')
         await chatStore.loadChannelUsers(channelId)
       }
     })
 
-    socket.value.on('userWasInvited', async ({ channelId }) => {
+    socket.value.on('userWasInvited', async ({channelId}) => {
       const auth = useAuthStore()
-      const { useChatStore } = await import('stores/chat')
+      const {useChatStore} = await import('stores/chat')
       const chatStore = useChatStore()
 
-      console.log('🔴 CLIENT: userWasInvited received:', {
+      console.log('CLIENT: userWasInvited received:', {
         channelId,
         currentUserId: auth.user?.id
       })
 
       await chatStore.fetchChannels()
 
-      Notify.create({
-        type: 'info',
-        color: 'orange',
-        icon: 'mail',
-        message: 'You have been invited to a channel',
-        position: 'top',
-        timeout: 4000,
-      })
+      if (auth.isOnline && !auth.isDND) {
+        Notify.create({
+          type: 'info',
+          color: 'orange',
+          icon: 'mail',
+          message: 'You have been invited to a channel',
+          position: 'top',
+          timeout: 4000,
+        })
+      }
     })
 
     socket.value.on('userWasKicked', async ({ channelId, userId }) => {

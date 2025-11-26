@@ -38,6 +38,14 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.activity_status !== 'offline'
   })
 
+  const isDND = computed(() => {
+    return user.value?.activity_status === 'away'
+  })
+
+  const notificationPreference = ref<'all' | 'mentioned' | 'none'>(
+    localStorage.getItem('notificationPreference') as 'all' | 'mentioned' | 'none' || 'all'
+  )
+
   function authenticate(result: AuthResponse) {
     token.value = result.token
     user.value = result.user
@@ -131,5 +139,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, login, register, logout, me, updateStatus, isOnline }
+  function setNotificationPreference(pref: 'all' | 'mentioned' | 'none') {
+    notificationPreference.value = pref
+    localStorage.setItem('notificationPreference', pref)
+  }
+
+  return { user, token, login, register, logout, me, updateStatus, isOnline, isDND, notificationPreference, setNotificationPreference }
 });

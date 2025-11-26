@@ -27,7 +27,7 @@ app.ready(() => {
         userSockets[userId].push(socket.id)
       }
     } else {
-      console.warn(`⚠️ Socket ${socket.id} connected without userId`)
+      console.warn(`Socket ${socket.id} connected without userId`)
       return
     }
 
@@ -42,7 +42,6 @@ app.ready(() => {
 
         let sentCount = 0
         for (const { user_id } of usersInChannel) {
-          const user = await db.from('users').where('id', user_id).first()
           const sockets = getUserSockets(user_id)
           for (const socketId of sockets) {
             io.to(socketId).emit('newMessage', {
@@ -62,7 +61,7 @@ app.ready(() => {
     })
 
     socket.on('userInvited', async ({ channelId, targetUserId }) => {
-      console.log('🟢 SERVER: userInvited received:', { channelId, targetUserId })
+      console.log('SERVER: userInvited received:', { channelId, targetUserId })
 
       const targetSockets = getUserSockets(targetUserId)
       for (const socketId of targetSockets) {
@@ -71,7 +70,7 @@ app.ready(() => {
         })
       }
 
-      console.log('🟢 SERVER: Emitted userWasInvited to user ' + targetUserId)
+      console.log('SERVER: Emitted userWasInvited to user ' + targetUserId)
     })
 
     socket.on('joinChannel', ({ userId: joinUserId, channelId }: { userId: number; channelId: number }) => {
@@ -135,14 +134,14 @@ app.ready(() => {
     })
 
     socket.on('userKicked', async ({ channelId, targetUserId }) => {
-      console.log('🟢 SERVER: userKicked received:', { channelId, targetUserId })
+      console.log('SERVER: userKicked received:', { channelId, targetUserId })
 
       io.to(`channel-${channelId}`).emit('userWasKicked', {
         channelId,
         userId: targetUserId
       })
 
-      console.log('🟢 SERVER: Emitted userWasKicked to channel-' + channelId)
+      console.log('SERVER: Emitted userWasKicked to channel-' + channelId)
 
       io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
     })
