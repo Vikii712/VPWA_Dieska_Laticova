@@ -45,11 +45,11 @@
 <template>
 
   <q-item clickable v-ripple @click="showDialog = true">
-    <q-item-section avatar>
+    <q-item-section avatar class="text-white">
       <q-icon name="add" />
     </q-item-section>
 
-    <q-item-section>
+    <q-item-section class="text-white">
       Add Channel
     </q-item-section>
   </q-item>

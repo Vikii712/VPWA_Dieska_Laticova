@@ -65,7 +65,7 @@ async function handleKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <ChatComponent/>
+  <ChatComponent :mini="leftOffset > 56" />
 
   <cancelDialog
     v-if="chat.currentChannelId !== null"

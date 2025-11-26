@@ -16,7 +16,6 @@ onMounted(async () => {
 async function selectChannel(channelId: number) {
   const channel = chat.channels.find(c => c.id === channelId)
 
-  // Ak je invited, pri kliknutí sa nič nestane (len tlačidlo Join funguje)
   if (channel?.invited) {
     return
   }
@@ -26,11 +25,9 @@ async function selectChannel(channelId: number) {
 
 const sortedChannels = computed(() => {
   return [...chat.channels].sort((a, b) => {
-    // 1. Invited channels first
     if (a.invited && !b.invited) return -1
     if (!a.invited && b.invited) return 1
 
-    // 2. Then by unread messages
     const unreadA = chat.unreadChannels[a.id] || 0
     const unreadB = chat.unreadChannels[b.id] || 0
 
@@ -70,7 +67,6 @@ const sortedChannels = computed(() => {
           <q-avatar class="q-pl-xs">
             <img alt="" src="../assets/images/channel_icon.svg" width="50" />
 
-            <!-- Invite badge má prioritu -->
             <q-badge
               v-if="channel.invited"
               color="orange"
@@ -80,7 +76,6 @@ const sortedChannels = computed(() => {
               invite
             </q-badge>
 
-            <!-- Inak new badge -->
             <q-badge
               v-else-if="chat.unreadChannels[channel.id]! > 0"
               color="teal-10"
@@ -108,6 +103,6 @@ const sortedChannels = computed(() => {
       </q-list>
     </q-scroll-area>
 
-    <AddChannel />
+    <AddChannel/>
   </q-drawer>
 </template>

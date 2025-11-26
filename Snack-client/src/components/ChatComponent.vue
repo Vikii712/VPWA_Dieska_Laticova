@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useChatStore } from 'stores/chat'
 import { useAuthStore } from 'stores/auth'
-import type { QInfiniteScroll } from 'quasar'
+import type { QScrollArea } from 'quasar'
+import { useQuasar } from 'quasar'
 
 const chat = useChatStore()
 const auth = useAuthStore()
+const $q = useQuasar()
 
-const infiniteScroll = ref<QInfiniteScroll | null>(null)
+const props = defineProps<{
+  mini: boolean
+}>()
+
+const scrollAreaRef = ref<QScrollArea | null>(null)
+const isLoadingMore = ref(false)
+const lastScrollHeight = ref(0)
+
+const leftOffset = computed(() =>
+  $q.screen.lt.md ? 0 : (props.mini ? 56 : 300)
+)
 
 const isMessageMentioningMe = (messageId: number) => {
   const message = chat.messages.find(m => m.id === messageId)
@@ -15,46 +27,63 @@ const isMessageMentioningMe = (messageId: number) => {
   return chat.isUserMentioned(message, auth.user.id)
 }
 
-async function onLoad(index: number, done: (stop?: boolean) => void) {
-  if (!chat.currentChannelId) {
-    done(true)
-    return
-  }
+async function loadMoreMessages() {
+  if (!chat.currentChannelId || isLoadingMore.value) return
 
   const channelId = chat.currentChannelId
   const meta = chat.channelMeta[channelId]
 
   if (!meta || !meta.hasMore || meta.isLoading) {
-    done(true)
     return
+  }
+
+  isLoadingMore.value = true
+  const scrollTarget = scrollAreaRef.value?.getScrollTarget()
+  if (scrollTarget) {
+    lastScrollHeight.value = scrollTarget.scrollHeight
   }
 
   const nextPage = meta.currentPage + 1
   await chat.loadMessages(channelId, nextPage)
 
-  const updatedMeta = chat.channelMeta[channelId]
-  done(!updatedMeta?.hasMore)
+  await nextTick()
+  if (scrollTarget) {
+    const newScrollHeight = scrollTarget.scrollHeight
+    scrollTarget.scrollTop = newScrollHeight - lastScrollHeight.value
+  }
+
+  isLoadingMore.value = false
 }
 
-async function scrollToBottom() {
-  await nextTick(() => {
-    const scrollArea = infiniteScroll.value?.$el.querySelector('.q-scrollarea__container')
-    if (scrollArea) {
-      scrollArea.scrollTop = scrollArea.scrollHeight
+function onScroll(info: { verticalPosition: number; verticalSize: number; verticalContainerSize: number }) {
+  if (info.verticalPosition < 100 && !isLoadingMore.value && chat.hasMoreMessages) {
+    void loadMoreMessages()
+  }
+}
+
+async function scrollToBottom(smooth = false) {
+  await nextTick()
+  const scrollTarget = scrollAreaRef.value?.getScrollTarget()
+  if (scrollTarget) {
+    if (smooth) {
+      scrollTarget.scrollTo({
+        top: scrollTarget.scrollHeight,
+        behavior: 'smooth'
+      })
+    } else {
+      scrollTarget.scrollTop = scrollTarget.scrollHeight
     }
-  })
+  }
 }
 
 async function handleNewMessage() {
-  await scrollToBottom()
+  await nextTick()
+  await scrollToBottom(true)
 }
 
 async function handleChannelSwitch() {
-  if (infiniteScroll.value) {
-    infiniteScroll.value.reset()
-    infiniteScroll.value.resume()
-  }
-  await scrollToBottom()
+  await nextTick()
+  await scrollToBottom(false)
 }
 
 function onNewMessageEvent() {
@@ -78,74 +107,107 @@ onBeforeUnmount(() => {
 })
 
 watch(() => chat.currentChannelId, async () => {
-  if (infiniteScroll.value) {
-    infiniteScroll.value.reset()
-    infiniteScroll.value.resume()
-  }
-  await scrollToBottom()
+  await handleChannelSwitch()
 })
 </script>
 
-
 <template>
-  <div
-    v-if="!chat.currentChannelId"
-    class="column items-center text-grey-5"
-  >
-    <q-icon name="forum" size="80px"/>
-    <p class="text-h6 q-mt-md ">Select a channel to start chatting</p>
-  </div>
-
-  <q-infinite-scroll
-    @load="onLoad"
-    v-if="chat.currentChannelId"
-    reverse
-    ref="infiniteScroll"
-    :offset="250"
-    class="full-height overflow-auto"
-  >
-
-    <q-timeline
-      color="deep-purple-6"
-      class="q-px-lg q-pb-xl"
-      layout="dense"
-      v-if="chat.messages.length > 0"
+  <div class="chat-container" :style="{ left: leftOffset + 'px', width: `calc(100% - ${leftOffset}px)` }">
+    <div
+      v-if="!chat.currentChannelId"
+      class="column items-center text-grey-5 full-height justify-center"
     >
-      <q-timeline-entry
-        v-for="message in chat.messages"
-        :key="message.id"
-        :title="message.author.id === auth.user?.id ? 'You' : message.author.nick"
-        :subtitle="new Date(message.createdAt).toLocaleString()"
-        :color="
+      <q-icon name="forum" size="80px"/>
+      <p class="text-h6 q-mt-md">Select a channel to start chatting</p>
+    </div>
+
+    <q-scroll-area
+      v-else
+      ref="scrollAreaRef"
+      class="chat-scroll-area"
+      @scroll="onScroll"
+      :thumb-style="{
+        right: '2px',
+        borderRadius: '5px',
+        background: 'rgba(155, 89, 182, 0.5)',
+        width: '8px',
+      }"
+    >
+      <div v-if="isLoadingMore" class="text-center q-pa-md">
+        <q-spinner color="deep-purple-6" size="32px" />
+        <div class="text-grey-5 q-mt-sm">Loading older messages...</div>
+      </div>
+
+      <div
+        v-else-if="chat.messages.length > 0 && !chat.hasMoreMessages"
+        class="text-center q-pa-md text-grey-5"
+      >
+        <q-icon name="check_circle" size="24px" />
+        <div class="q-mt-sm">Beginning of channel</div>
+      </div>
+
+      <q-timeline
+        v-if="chat.messages.length > 0"
+        color="deep-purple-6"
+        class="q-px-lg q-pb-xl q-pt-md"
+        layout="dense"
+      >
+        <q-timeline-entry
+          v-for="message in chat.messages"
+          :key="message.id"
+          :title="message.author.id === auth.user?.id ? 'You' : message.author.nick"
+          :subtitle="new Date(message.createdAt).toLocaleString()"
+          :color="
           isMessageMentioningMe(message.id)
             ? 'deep-orange-10'
             : message.author.id === auth.user?.id
               ? 'teal'
               : 'blue-grey'
         "
-        class="text-white"
-      >
-        <div
-          class="q-pa-sm text-white text-body1"
-          :class="{
+          class="text-white"
+        >
+          <div
+            class="q-pa-sm text-white text-body1 rounded-borders"
+            :class="{
             'bg-deep-orange-10': isMessageMentioningMe(message.id),
             'bg-teal-10': !isMessageMentioningMe(message.id) && message.author.id === auth.user?.id,
             'bg-blue-grey-10': !isMessageMentioningMe(message.id) && message.author.id !== auth.user?.id
           }"
-          style="white-space: pre-line;"
-        >
-          {{ message.content }}
-        </div>
+            style="white-space: pre-line;"
+          >
+            {{ message.content }}
+          </div>
 
-        <q-separator class="q-mb-0 q-mt-sm rounded-borders" />
-      </q-timeline-entry>
-    </q-timeline>
+          <q-separator class="q-mb-0 q-mt-sm rounded-borders" />
+        </q-timeline-entry>
+      </q-timeline>
 
-    <div v-else class="q-pa-md text-white text-center">
-      No messages yet for this channel.
-    </div>
-  </q-infinite-scroll>
+      <div v-else class="q-pa-md text-white text-center">
+        <q-icon name="chat_bubble_outline" size="48px" class="text-grey-6" />
+        <div class="q-mt-md text-grey-5">No messages yet in this channel.</div>
+        <div class="q-mt-sm text-grey-6 text-caption">Be the first to say something!</div>
+      </div>
+    </q-scroll-area>
+  </div>
 </template>
-<style scoped>
 
+<style scoped>
+.chat-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 20px;
+  height:100vh;
+  overflow: hidden;
+  transition: left 0.3s, width 0.3s;
+}
+
+.chat-scroll-area {
+  width: 100%;
+  height: 100%;
+}
+
+.rounded-borders {
+  border-radius: 8px;
+}
 </style>

@@ -85,7 +85,6 @@ export const useChatStore = defineStore('chat', () => {
   async function fetchChannels() {
     try {
       const result = await api<{channels: Channel[]}>('GET', '/channels')
-      //console.log('Fetched channels:', result.channels);
       if (result && 'channels' in result && Array.isArray(result.channels)) {
         channels.value = result.channels
 
@@ -117,7 +116,7 @@ export const useChatStore = defineStore('chat', () => {
       const result = await api<{
         messages: Message[]
         meta: { currentPage: number; lastPage: number; total: number }
-      }>('GET', `/channels/${channelId}/messages?page=${page}&limit=20`)
+      }>('GET', `/channels/${channelId}/messages?page=${page}&limit=10`)
 
       if (result && result.messages) {
         if (!channelMessages.value[channelId]) {
@@ -302,12 +301,13 @@ export const useChatStore = defineStore('chat', () => {
       addMessage(message)
 
       socketStore.sendMessage(currentChannelId.value, message)
+      await nextTick()
+      window.dispatchEvent(new Event('new-message-received'))
 
     } catch (error) {
       console.error('Error sending message:', error)
     }
   }
-
 
   function addMessage(message: Message) {
     const channelId = message.channelId
@@ -335,10 +335,6 @@ export const useChatStore = defineStore('chat', () => {
         unreadChannels.value[channelId] = 0
       }
       unreadChannels.value[channelId]++
-    } else if (message.channelId === currentChannelId.value) {
-      setTimeout(() => {
-        window.dispatchEvent(new Event('new-message-received'))
-      }, 50)
     }
   }
 

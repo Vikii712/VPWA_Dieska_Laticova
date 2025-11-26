@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { io } from 'socket.io-client'
 import type { Socket } from 'socket.io-client'
-import { ref } from 'vue'
+import {nextTick, ref} from 'vue'
 import type { Message } from 'stores/chat'
 import { Notify } from 'quasar'
 import { useAuthStore } from 'stores/auth'
@@ -70,6 +70,8 @@ export const useSocketStore = defineStore('socket', () => {
       }
 
       chatStore.addMessage(data)
+      await nextTick()
+      window.dispatchEvent(new Event('new-message-received'))
 
       const isMentioned = data.mentions?.some(m => m.mentionedId === authStore.user?.id)
 
