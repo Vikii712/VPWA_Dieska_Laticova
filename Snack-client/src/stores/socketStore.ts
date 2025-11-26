@@ -62,6 +62,8 @@ export const useSocketStore = defineStore('socket', () => {
       const chatStore = useChatStore()
       const authStore = useAuthStore()
 
+      const isDND = authStore.user?.activity_status === 'away'
+
       console.log('Received new message:', data)
 
       if (!authStore.isOnline) {
@@ -72,6 +74,10 @@ export const useSocketStore = defineStore('socket', () => {
       chatStore.addMessage(data)
 
       const isMentioned = data.mentions?.some(m => m.mentionedId === authStore.user?.id)
+
+      if(isDND) {
+        return
+      }
 
       if (data.channelId !== chatStore.currentChannelId) {
         Notify.create({

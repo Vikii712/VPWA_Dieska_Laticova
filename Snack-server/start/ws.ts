@@ -19,7 +19,7 @@ app.ready(() => {
 
   io.on('connection', (socket) => {
     const userId = socket.data.userId
-    console.log(`✅ User ${userId} connected: ${socket.id}`)
+    console.log(`User ${userId} connected: ${socket.id}`)
 
     if (userId !== undefined) {
       if (!userSockets[userId]) userSockets[userId] = []
@@ -42,6 +42,7 @@ app.ready(() => {
 
         let sentCount = 0
         for (const { user_id } of usersInChannel) {
+          const user = await db.from('users').where('id', user_id).first()
           const sockets = getUserSockets(user_id)
           for (const socketId of sockets) {
             io.to(socketId).emit('newMessage', {
