@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue'
+import {computed, ref} from 'vue'
 import { api } from 'src/services/api'
 
 interface User {
@@ -32,6 +32,10 @@ interface RegisterPayload {
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('token'))
+
+  const isOnline = computed(() => {
+    return user.value?.activity_status !== 'offline'
+  })
 
   function authenticate(result: AuthResponse) {
     token.value = result.token
@@ -76,6 +80,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       await api('POST', '/user/status', { status })
 
+      const oldStatus = user.value?.activity_status
+
       if (user.value) {
         user.value.activity_status = status
       }
@@ -90,6 +96,33 @@ export const useAuthStore = defineStore('auth', () => {
         console.warn('Socket is not connected')
       }
 
+      if (oldStatus === 'offline' && status !== 'offline') {
+        console.log('Coming back online, reloading data...')
+        const {useChatStore} = await import('stores/chat')
+        const chatStore = useChatStore()
+
+        const currentChannelId = chatStore.currentChannelId
+
+        await chatStore.fetchChannels()
+
+        if (currentChannelId) {
+          await chatStore.reloadCurrentChannel()
+        }
+
+        if (currentChannelId) {
+          console.log(`Reloading channel ${currentChannelId}`)
+          chatStore.channelMessages[currentChannelId] = []
+          if (chatStore.channelMeta[currentChannelId]) {
+            chatStore.channelMeta[currentChannelId] = {
+              currentPage: 0,
+              hasMore: true,
+              isLoading: false
+            }
+          }
+          await chatStore.loadChannel(currentChannelId)
+        }
+      }
+
       console.log('Status updated successfully')
 
     } catch (error) {
@@ -97,5 +130,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, login, register, logout, me, updateStatus }
+  return { user, token, login, register, logout, me, updateStatus, isOnline }
 });

@@ -5,6 +5,7 @@ import { ref, computed } from "vue"
 import { useChatStore } from "stores/chat"
 import { useCommandStore } from "stores/commandStore"
 import {useQuasar} from "quasar";
+import {useAuthStore} from "stores/auth";
 
 const $q = useQuasar()
 const message = ref('')
@@ -12,6 +13,7 @@ const chat = useChatStore()
 const isSending = ref(false)
 const props = defineProps<{ mini: boolean }>()
 const commandStore = useCommandStore()
+const auth = useAuthStore()
 
 const leftOffset = computed(() =>
   $q.screen.lt.md ? 0 : (props.mini ? 300 : 56)
@@ -88,7 +90,7 @@ async function handleKeydown(event: KeyboardEvent) {
         input-class="q-pl-lg"
         :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}"
         @keydown="handleKeydown"
-        :disable="isSending"
+        :disable="isSending || !auth.isOnline"
         placeholder="Type a message..."
       >
         <template v-slot:append>

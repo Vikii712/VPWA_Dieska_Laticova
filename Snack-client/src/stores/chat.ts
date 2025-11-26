@@ -183,6 +183,28 @@ export const useChatStore = defineStore('chat', () => {
     window.dispatchEvent(new Event('channel-switched'))
   }
 
+  async function reloadCurrentChannel() {
+    if (!currentChannelId.value) return
+
+    const channelId = currentChannelId.value
+
+    console.log(`Force reloading channel ${channelId}`)
+
+    channelMessages.value[channelId] = []
+
+    channelMeta.value[channelId] = {
+      currentPage: 0,
+      hasMore: true,
+      isLoading: false
+    }
+
+    await loadMessages(channelId, 1)
+    await loadChannelUsers(channelId)
+
+    await nextTick()
+    window.dispatchEvent(new Event('channel-switched'))
+  }
+
   async function createChannel(name: string, type: 'public' | 'private' = 'public') {
     if (!name.trim()) {
       throw new Error('You must provide a valid name.')
@@ -413,5 +435,6 @@ export const useChatStore = defineStore('chat', () => {
     isUserMentioned,
     revokeUser,
     kickUser,
+    reloadCurrentChannel
   }
 })
