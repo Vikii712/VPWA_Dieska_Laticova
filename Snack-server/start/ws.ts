@@ -105,10 +105,32 @@ app.ready(() => {
         console.error('Error broadcasting typing:', error)
       }
     })
+    socket.on('userRevoked', async ({ channelId, targetUserId }) => {
+
+      io.to(`channel-${channelId}`).emit('userWasRevoked', {
+        channelId,
+        userId: targetUserId
+      })
+
+
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+    })
+
+    socket.on('userKicked', async ({ channelId, targetUserId }) => {
+      console.log('🟢 SERVER: userKicked received:', { channelId, targetUserId })
+
+      io.to(`channel-${channelId}`).emit('userWasKicked', {
+        channelId,
+        userId: targetUserId
+      })
+
+      console.log('🟢 SERVER: Emitted userWasKicked to channel-' + channelId)
+
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+    })
 
     socket.on('disconnect', () => {
       if (userId !== undefined) {
-        console.log(`User ${userId} disconnected: ${socket.id}`)
         if (userSockets[userId]) {
           userSockets[userId] = userSockets[userId].filter(id => id !== socket.id)
           if (userSockets[userId].length === 0) {
@@ -128,22 +150,3 @@ function getUserSockets(userId: number) {
   return userSockets[userId] || [];
 }
 
-/*
-function addUserSocket(userId: number, socketId: string) {
-  if (!userSockets.has(userId)) {
-    userSockets.set(userId, new Set())
-  }
-  userSockets.get(userId)!.add(socketId)
-}
-
-function removeUserSocket(userId: number, socketId: string) {
-  const sockets = userSockets.get(userId)
-  if (sockets) {
-    sockets.delete(socketId)
-    if (sockets.size === 0) {
-      userSockets.delete(userId)
-    }
-  }
-}
-
- */

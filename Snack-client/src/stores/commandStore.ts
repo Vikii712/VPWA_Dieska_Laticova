@@ -2,10 +2,14 @@ import { defineStore } from 'pinia'
 import { useChatStore } from './chat'
 import { api } from 'src/services/api'
 import { ref } from 'vue'
-
+import {useAuthStore} from "stores/auth"
+import {useSocketStore} from 'stores/socketStore'
 
 export const useCommandStore = defineStore('command', () => {
   const chat = useChatStore()
+
+  const auth =  useAuthStore()
+  const socketStore =  useSocketStore()
 
   const memberListDrawerOpen = ref(false)
 
@@ -35,6 +39,8 @@ export const useCommandStore = defineStore('command', () => {
         return await handleInvite(parts)
       case '/revoke':
         return await handleRevoke(parts)
+      case '/kick':
+        return await handleKick(parts)
       default:
         return { type: 'warning', message: `Unknown command: ${cmd}` }
     }
@@ -119,34 +125,94 @@ export const useCommandStore = defineStore('command', () => {
   }
 
   async function handleRevoke(parts: string[]): Promise<CommandResult> {
-    const [, nickName] = parts
+    const [, targetNick] = parts
 
-    if (!nickName) {
+    if (!targetNick) {
       return { type: 'negative', message: 'Usage: /revoke username' }
     }
 
     if (!chat.currentChannelId) {
-      return { type: 'negative', message: 'You must be in a channel to revoke someone.' }
+      return { type: 'negative', message: 'You are not in a channel' }
     }
 
     const channel = chat.currentChannel
     if (!channel) {
-      return { type: 'negative', message: 'Current channel not found.' }
+      return { type: 'negative', message: 'Channel not found' }
     }
 
-    if (channel.moderatorId !== chat.moderatorId) {
+    if (channel.public) {
+      return { type: 'negative', message: 'Use /kick for public channels' }
+    }
+
+    if (channel.moderatorId !== auth.user?.id) {
       return { type: 'negative', message: 'Only the channel moderator can revoke users.' }
     }
 
     try {
-      await api('POST', `/channels/${chat.currentChannelId}/revoke`, { nickName })
-      return { type: 'positive', message: `${nickName} has been removed from the channel.` }
-    } catch (error) {
-      console.error(error)
-      return { type: 'negative', message: 'Failed to revoke user.' }
+      const targetUserId = await chat.revokeUser(chat.currentChannelId, targetNick)
+
+      console.log('🔍 Got targetUserId from API:', targetUserId)
+
+      if (targetUserId) {
+        console.log('📤 Emitting userRevoked:', { channelId: chat.currentChannelId, targetUserId })
+        socketStore.notifyUserRevoked(chat.currentChannelId, targetUserId)
+      } else {
+        console.warn('⚠️ No targetUserId returned from API!')
+      }
+
+      return { type: 'positive', message: `${targetNick} has been removed from the channel.` }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to revoke user.'
+      console.error(msg)
+      return { type: 'negative', message: msg }
     }
   }
 
+  async function handleKick(parts: string[]): Promise<CommandResult> {
+    const [, targetNick] = parts
+
+    if (!targetNick) {
+      return { type: 'negative', message: 'Usage: /kick username' }
+    }
+
+    if (!chat.currentChannelId) {
+      return { type: 'negative', message: 'You are not in a channel' }
+    }
+
+    const channel = chat.currentChannel
+    if (!channel) {
+      return { type: 'negative', message: 'Channel not found' }
+    }
+
+    if (!channel.public) {
+      return { type: 'negative', message: 'Use /revoke for private channels' }
+    }
+
+    const moderator = chat.currentChannelUsers.find(u => u.id === channel.moderatorId)
+
+    if (moderator && targetNick === moderator.nick) {
+      return { type: 'negative', message: 'Cannot kick the channel moderator' }
+    }
+
+    try {
+      const targetUserId = await chat.kickUser(chat.currentChannelId, targetNick)
+
+      console.log('🔍 Got targetUserId from API:', targetUserId)
+
+      if (targetUserId) {
+        console.log('📤 Emitting userKicked:', { channelId: chat.currentChannelId, targetUserId })
+        socketStore.notifyUserKicked(chat.currentChannelId, targetUserId)
+      } else {
+        console.warn('⚠️ No targetUserId returned from API!')
+      }
+
+      return { type: 'positive', message: `${targetNick} has been kicked from the channel.` }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to kick user.'
+      console.error(msg)
+      return { type: 'negative', message: msg }
+    }
+  }
 
   return {
     processCommand,

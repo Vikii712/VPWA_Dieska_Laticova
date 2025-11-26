@@ -310,6 +310,36 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  async function revokeUser(channelId: number, nickName: string) {
+    try {
+      const result = await api<{ message: string; targetUserId: number }>(
+        'DELETE',
+        `/channels/${channelId}/revoke`,
+        { nickName }
+      )
+      await loadChannelUsers(channelId)
+      return result.targetUserId
+    } catch (error) {
+      console.error('Error revoking user:', error)
+      throw error
+    }
+  }
+
+  async function kickUser(channelId: number, nickName: string) {
+    try {
+      const result = await api<{ message: string; targetUserId: number }>(
+        'DELETE',
+        `/channels/${channelId}/kick`,
+        { nickName }
+      )
+      await loadChannelUsers(channelId)
+      return result.targetUserId
+    } catch (error) {
+      console.error('Error kicking user:', error)
+      throw error
+    }
+  }
+
   function clearAll() {
     currentChannelId.value = null
     channelMessages.value = {}
@@ -348,5 +378,7 @@ export const useChatStore = defineStore('chat', () => {
     addMessage,
     clearAll,
     isUserMentioned,
+    revokeUser,
+    kickUser,
   }
 })

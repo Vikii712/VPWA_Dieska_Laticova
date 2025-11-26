@@ -131,6 +131,68 @@ export const useSocketStore = defineStore('socket', () => {
 
       await chatStore.fetchChannels()
     })
+
+    socket.value.on('userWasRevoked', async ({ channelId, userId }) => {
+      const auth = useAuthStore()
+      const { useChatStore } = await import('stores/chat')
+      const chatStore = useChatStore()
+
+      console.log('🔴 CLIENT: userWasRevoked received:', {
+        channelId,
+        userId,
+        currentUserId: auth.user?.id,
+        isMe: auth.user?.id === userId
+      })
+
+      if (auth.user?.id === userId) {
+        console.log('🔴 CLIENT: I was revoked! Leaving channel...')
+        if (chatStore.currentChannelId === channelId) {
+          chatStore.currentChannelId = null
+        }
+        await chatStore.fetchChannels()
+
+        Notify.create({
+          type: 'negative',
+          message: 'You have been removed from the channel',
+          position: 'top',
+          timeout: 3000,
+        })
+      } else if (chatStore.currentChannelId === channelId) {
+        console.log('🔴 CLIENT: Someone else was revoked, reloading users...')
+        await chatStore.loadChannelUsers(channelId)
+      }
+    })
+
+    socket.value.on('userWasKicked', async ({ channelId, userId }) => {
+      const auth = useAuthStore()
+      const { useChatStore } = await import('stores/chat')
+      const chatStore = useChatStore()
+
+      console.log('🔴 CLIENT: userWasKicked received:', {
+        channelId,
+        userId,
+        currentUserId: auth.user?.id,
+        isMe: auth.user?.id === userId
+      })
+
+      if (auth.user?.id === userId) {
+        console.log('🔴 CLIENT: I was kicked! Leaving channel...')
+        if (chatStore.currentChannelId === channelId) {
+          chatStore.currentChannelId = null
+        }
+        await chatStore.fetchChannels()
+
+        Notify.create({
+          type: 'negative',
+          message: 'You have been kicked from the channel',
+          position: 'top',
+          timeout: 3000,
+        })
+      } else if (chatStore.currentChannelId === channelId) {
+        console.log('🔴 CLIENT: Someone else was kicked, reloading users...')
+        await chatStore.loadChannelUsers(channelId)
+      }
+    })
   }
 
   function disconnect() {
@@ -173,6 +235,16 @@ export const useSocketStore = defineStore('socket', () => {
     }
   }
 
+  const notifyUserRevoked = (channelId: number, targetUserId: number) => {
+    console.log('🚀 notifyUserRevoked called:', { channelId, targetUserId, connected: connected.value })
+    socket.value?.emit('userRevoked', { channelId, targetUserId })
+  }
+
+  const notifyUserKicked = (channelId: number, targetUserId: number) => {
+    console.log('🚀 notifyUserKicked called:', { channelId, targetUserId, connected: connected.value })
+    socket.value?.emit('userKicked', { channelId, targetUserId })
+  }
+
   function init(token?: string) {
     if (socket.value?.connected) return
     const _token = token || useAuthStore().token
@@ -201,6 +273,8 @@ export const useSocketStore = defineStore('socket', () => {
     sendMessage,
     notifyUserJoined,
     notifyUserLeft,
-    init
+    init,
+    notifyUserRevoked,
+    notifyUserKicked,
   }
 })
