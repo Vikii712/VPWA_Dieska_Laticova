@@ -8,6 +8,7 @@ interface User {
   name: string;
   lastName: string;
   email: string;
+  activity_status: string;
 }
 
 interface AuthResponse {
@@ -56,10 +57,45 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function me() {
-    const result = await api<AuthResponse>('GET', '/me') as { user: User }
-    user.value = result.user
-    return user.value
+    try {
+      const result = await api<{ user: User }>('GET', '/me')
+      if (result && result.user) {
+        user.value = result.user
+        if (!user.value.activity_status) {
+          await updateStatus('active')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user:', error)
+    }
   }
 
-  return { user, token, login, register, logout, me }
+  async function updateStatus(status: string) {
+    try {
+      console.log('Updating status to:', status)
+
+      await api('POST', '/user/status', { status })
+
+      if (user.value) {
+        user.value.activity_status = status
+      }
+
+      const { useSocketStore } = await import('stores/socketStore')
+      const socketStore = useSocketStore()
+
+      if (socketStore.socket) {
+        console.log('Emitting statusChange')
+        socketStore.socket.emit('statusChange', { status })
+      } else {
+        console.warn('Socket is not connected')
+      }
+
+      console.log('Status updated successfully')
+
+    } catch (error) {
+      console.error('Failed to update status:', error)
+    }
+  }
+
+  return { user, token, login, register, logout, me, updateStatus }
 });

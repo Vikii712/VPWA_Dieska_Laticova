@@ -35,6 +35,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column({ serializeAs: null })
   declare password: string
 
+  @column()
+  declare activity_status: string
+
   @hasMany(() => Notification, {
     foreignKey: 'userId',
   })

@@ -2,6 +2,7 @@ import app from '@adonisjs/core/services/app'
 import { Server } from 'socket.io'
 import server from '@adonisjs/core/services/server'
 import db from "@adonisjs/lucid/services/db";
+import {wsAuthMiddleware} from "#middleware/ws_auth";
 
 const userSockets: Record<number, string[]> = {};
 
@@ -14,9 +15,11 @@ app.ready(() => {
 
   console.log('Socket.IO server started.')
 
+  io.use(wsAuthMiddleware)
+
   io.on('connection', (socket) => {
     const userId = socket.data.userId
-    console.log(`User ${userId} connected: ${socket.id}`)
+    console.log(`✅ User ${userId} connected: ${socket.id}`)
 
     if (userId !== undefined) {
       if (!userSockets[userId]) userSockets[userId] = []
@@ -24,7 +27,8 @@ app.ready(() => {
         userSockets[userId].push(socket.id)
       }
     } else {
-      console.warn(`Socket ${socket.id} connected without userId`)
+      console.warn(`⚠️ Socket ${socket.id} connected without userId`)
+      return
     }
 
     socket.on('sendMessage', async (data, callback) => {
@@ -127,6 +131,53 @@ app.ready(() => {
       console.log('🟢 SERVER: Emitted userWasKicked to channel-' + channelId)
 
       io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+    })
+
+    socket.on('statusChange', async (data: { status: string }) => {
+      try {
+        const { status } = data
+        if (userId === undefined) {
+          console.warn('statusChange: userId is undefined')
+          return
+        }
+
+        console.log(`User ${userId} changing status to ${status}`)
+        await db
+          .from('users')
+          .where('id', userId)
+          .update({ activity_status: status })
+
+        const userChannels = await db
+          .from('channel_users')
+          .where('user_id', userId)
+          .select('channel_id')
+
+        console.log(`User ${userId} is in ${userChannels.length} channels`)
+
+        for (const { channel_id } of userChannels) {
+          const channelUsers = await db
+            .from('channel_users')
+            .where('channel_id', channel_id)
+            .select('user_id')
+
+          console.log(`Broadcasting status to ${channelUsers.length} users in channel ${channel_id}`)
+          for (const { user_id } of channelUsers) {
+            const sockets = getUserSockets(user_id)
+            for (const socketId of sockets) {
+              io.to(socketId).emit('userStatusUpdate', {
+                userId,
+                status,
+                channelId: channel_id
+              })
+              console.log(`Sent status update to socket ${socketId}`)
+            }
+          }
+        }
+
+        console.log(`User ${userId} status changed to ${status} successfully`)
+      } catch (error) {
+        console.error('Error updating user status:', error)
+      }
     })
 
     socket.on('disconnect', () => {

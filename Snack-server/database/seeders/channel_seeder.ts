@@ -14,6 +14,7 @@ export default class extends BaseSeeder {
         lastName: 'User',
         email: 'admin@example.com',
         password: 'password',
+        activity_status: 'active'
       },
       {
         nick: 'Vikinka',
@@ -21,6 +22,7 @@ export default class extends BaseSeeder {
         lastName: 'Latičová',
         email: 'viki@gmail.com',
         password: 'laticova',
+        activity_status: 'active'
       },
       {
         nick: 'mdieska',
@@ -28,6 +30,7 @@ export default class extends BaseSeeder {
         lastName: 'Dieška',
         email: 'mdieska@gmail.com',
         password: 'password123',
+        activity_status: 'active'
       },
     ])
 
@@ -42,7 +45,7 @@ export default class extends BaseSeeder {
       {
         name: 'random',
         public: true,
-        moderatorId: admin.id,
+        moderatorId: viki.id,
       },
       {
         name: 'private-chat',

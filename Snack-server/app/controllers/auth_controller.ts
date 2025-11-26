@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import User from '#models/user'
 import { registerValidator, loginValidator } from '#validators/auth'
 
+
 export default class AuthController {
   async register({ request, response }: HttpContext) {
     const data = await request.validateUsing(registerValidator)
@@ -15,7 +16,8 @@ export default class AuthController {
         nick: user.nick,
         name: user.name,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        activity_status: user.activity_status
       }
     })
   }
@@ -32,7 +34,8 @@ export default class AuthController {
         nick: user.nick,
         name: user.name,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        activity_status: user.activity_status
       }
     })
   }
@@ -53,7 +56,8 @@ export default class AuthController {
         nick: user.nick,
         name: user.name,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        activity_status: user.activity_status
       }
     })
   }

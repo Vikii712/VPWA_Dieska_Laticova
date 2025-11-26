@@ -25,11 +25,6 @@ const routes: RouteRecordRaw[] = [
     meta : {requiresAuth: true},
   },
 
-
-
-
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

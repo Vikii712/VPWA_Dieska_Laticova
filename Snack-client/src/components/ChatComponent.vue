@@ -118,7 +118,7 @@ watch(() => chat.currentChannelId, async () => {
         :subtitle="new Date(message.createdAt).toLocaleString()"
         :color="
           isMessageMentioningMe(message.id)
-            ? 'yellow-8'
+            ? 'deep-orange-10'
             : message.author.id === auth.user?.id
               ? 'teal'
               : 'blue-grey'
@@ -128,7 +128,7 @@ watch(() => chat.currentChannelId, async () => {
         <div
           class="q-pa-sm text-white text-body1"
           :class="{
-            'bg-yellow-9': isMessageMentioningMe(message.id),
+            'bg-deep-orange-10': isMessageMentioningMe(message.id),
             'bg-teal-10': !isMessageMentioningMe(message.id) && message.author.id === auth.user?.id,
             'bg-blue-grey-10': !isMessageMentioningMe(message.id) && message.author.id !== auth.user?.id
           }"

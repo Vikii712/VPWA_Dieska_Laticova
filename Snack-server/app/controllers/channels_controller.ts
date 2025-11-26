@@ -80,11 +80,23 @@ export default class ChannelsController {
 
     const users = await db
       .from('users')
-      .select(['users.id', 'users.nick'])
+      .select(['users.id', 'users.nick', 'users.activity_status'])
       .join('channel_users', 'users.id', '=', 'channel_users.user_id')
       .where('channel_users.channel_id', channelId)
 
     return response.json(users)
+  }
+
+  async updateUserStatus({ auth, request, response }: HttpContext) {
+    const { status } = request.only(['status'])
+    const user = auth.user
+
+    await db
+      .from('users')
+      .where('id', user!.id)
+      .update({ activity_status: status })
+
+    return response.json({ success: true })
   }
 
   async sendMessage({ auth, params, request, response }: HttpContext) {

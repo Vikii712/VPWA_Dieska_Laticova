@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, computed} from "vue";
+import {ref, computed, watch} from "vue";
 import {useAuthStore} from "stores/auth";
 import {useRouter} from "vue-router";
 import { onMounted } from 'vue'
@@ -26,16 +26,21 @@ const activityBorder = computed(() => {
   }
 })
 
+watch(state, async (newStatus) => {
+  await auth.updateStatus(newStatus)
+})
+
 onMounted(async () => {
   await auth.me()
+  if (auth.user?.activity_status) {
+    state.value = auth.user.activity_status
+  }
 })
 
 async function logout() {
   await auth.logout()
-
   void router.push('/login')
 }
-
 </script>
 
 <template>

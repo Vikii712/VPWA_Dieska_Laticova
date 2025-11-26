@@ -13,8 +13,14 @@ export const useSocketStore = defineStore('socket', () => {
   function connect(token: string) {
     if (socket.value?.connected) return
 
+    const auth = useAuthStore()
+    const userId = auth.user?.id
+
     socket.value = io('http://localhost:3333', {
-      auth: { token },
+      auth: {
+        token,
+        userId
+      },
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -110,15 +116,16 @@ export const useSocketStore = defineStore('socket', () => {
       if (data.channelId === chatStore.currentChannelId) {
         await chatStore.loadChannelUsers(data.channelId)
       }
-    });
+    })
 
-    socket.value.on('connect_error', (err) => {
-      console.error('Problem with connection to the server::', err)
-    });
+    socket.value.on('userStatusUpdate', async (data: { userId: number; status: string; channelId: number }) => {
+      console.log('User status updated:', data)
 
-    socket.value.on('disconnect', (reason) => {
-      console.warn('Socket disconnected:', reason)
-    });
+      const { useChatStore } = await import('stores/chat')
+      const chatStore = useChatStore()
+
+      chatStore.updateUserStatus(data.userId, data.status)
+    })
 
     socket.value.on('channelDeleted', async ({ channelId }) => {
       const { useChatStore } = await import('stores/chat')
@@ -130,6 +137,10 @@ export const useSocketStore = defineStore('socket', () => {
       }
 
       await chatStore.fetchChannels()
+    })
+
+    socket.value.on('disconnect', (reason) => {
+      console.warn('Socket disconnected:', reason)
     })
 
     socket.value.on('userWasRevoked', async ({ channelId, userId }) => {
@@ -248,12 +259,19 @@ export const useSocketStore = defineStore('socket', () => {
   function init(token?: string) {
     if (socket.value?.connected) return
     const _token = token || useAuthStore().token
+    const auth = useAuthStore()
+    const userId = auth.user?.id
+
     if (!_token) {
       console.warn('No token for socket initialization!')
       return
     }
+
     socket.value = io('http://localhost:3333', {
-      auth: { token: _token },
+      auth: {
+        token: _token,
+        userId
+      },
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,

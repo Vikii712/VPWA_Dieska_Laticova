@@ -44,7 +44,7 @@ export const useChatStore = defineStore('chat', () => {
 
   const channelMeta = ref<Record<number, ChannelMeta>>({})
 
-  const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string}>>([])
+  const currentChannelUsers = ref<Array<{id: number; nick: string; name?: string; last_name?: string; activity_status: string}>>([])
 
   const unreadChannels = ref<Record<number, number>>({})
 
@@ -310,6 +310,38 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function updateUserStatus(userId: number, status: string) {
+    console.log('updateUserStatus called:', {
+      userId,
+      status,
+      hasUsers: !!currentChannelUsers.value,
+      usersCount: currentChannelUsers.value?.length
+    })
+
+    if (!currentChannelUsers.value) {
+      console.warn('currentChannelUsers is undefined')
+      return
+    }
+
+    const userIndex = currentChannelUsers.value.findIndex(u => u.id === userId)
+    console.log('User index found:', userIndex)
+
+    if (userIndex !== -1) {
+      const user = currentChannelUsers.value[userIndex]
+      const oldStatus = user!.activity_status
+      user!.activity_status = status
+      console.log(`Updated status for user ${userId} (${user!.nick}) from "${oldStatus}" to "${status}"`)
+      console.log('Current users after update:', currentChannelUsers.value.map(u => ({
+        id: u.id,
+        nick: u.nick,
+        status: u.activity_status
+      })))
+    } else {
+      console.warn(`User ${userId} not found in current channel users`)
+      console.log('Available users:', currentChannelUsers.value.map(u => ({ id: u.id, nick: u.nick })))
+    }
+  }
+
   async function revokeUser(channelId: number, nickName: string) {
     try {
       const result = await api<{ message: string; targetUserId: number }>(
@@ -376,6 +408,7 @@ export const useChatStore = defineStore('chat', () => {
     leaveChannel,
     sendMessage,
     addMessage,
+    updateUserStatus,
     clearAll,
     isUserMentioned,
     revokeUser,
