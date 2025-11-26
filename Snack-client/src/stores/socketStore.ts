@@ -46,11 +46,15 @@ export const useSocketStore = defineStore('socket', () => {
 
     socket.value.on('connect_error', (error) => {
       console.error('Socket connection error:', error)
-      Notify.create({
-        type: 'negative',
-        message: 'Connection error. Retrying...',
-        position: 'top',
-      })
+      const authStore = useAuthStore()
+
+      if (authStore.isOnline) {
+        Notify.create({
+          type: 'negative',
+          message: 'Connection error. Retrying...',
+          position: 'top',
+        })
+      }
     })
 
     socket.value.on('newMessage', async (data: Message & { channelName?: string }) => {
@@ -59,6 +63,11 @@ export const useSocketStore = defineStore('socket', () => {
       const authStore = useAuthStore()
 
       console.log('Received new message:', data)
+
+      if (!authStore.isOnline) {
+        console.log('User is offline, ignoring message')
+        return
+      }
 
       chatStore.addMessage(data)
 
@@ -105,11 +114,22 @@ export const useSocketStore = defineStore('socket', () => {
     })
 
     socket.value.on('userTyping', (data: { channelId: number; userId: number; nick: string }) => {
+      const authStore = useAuthStore()
       console.log('User typing:', data)
+
+      if (!authStore.isOnline) {
+        return
+      }
     })
 
     socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
       console.log('Channel users updated:', data.channelId)
+      const authStore = useAuthStore()
+
+      if (!authStore.isOnline) {
+        return
+      }
+
       const { useChatStore } = await import('stores/chat')
       const chatStore = useChatStore()
 
@@ -128,6 +148,7 @@ export const useSocketStore = defineStore('socket', () => {
     })
 
     socket.value.on('channelDeleted', async ({ channelId }) => {
+      const authStore = useAuthStore()
       const { useChatStore } = await import('stores/chat')
       const chatStore = useChatStore()
 
@@ -137,6 +158,14 @@ export const useSocketStore = defineStore('socket', () => {
       }
 
       await chatStore.fetchChannels()
+
+      if (authStore.isOnline) {
+        Notify.create({
+          type: 'warning',
+          message: 'Channel was deleted',
+          position: 'top',
+        })
+      }
     })
 
     socket.value.on('disconnect', (reason) => {
@@ -148,7 +177,7 @@ export const useSocketStore = defineStore('socket', () => {
       const { useChatStore } = await import('stores/chat')
       const chatStore = useChatStore()
 
-      console.log('🔴 CLIENT: userWasRevoked received:', {
+      console.log('CLIENT: userWasRevoked received:', {
         channelId,
         userId,
         currentUserId: auth.user?.id,
@@ -156,7 +185,7 @@ export const useSocketStore = defineStore('socket', () => {
       })
 
       if (auth.user?.id === userId) {
-        console.log('🔴 CLIENT: I was revoked! Leaving channel...')
+        console.log('CLIENT: I was revoked! Leaving channel...')
         if (chatStore.currentChannelId === channelId) {
           chatStore.currentChannelId = null
         }
@@ -169,7 +198,7 @@ export const useSocketStore = defineStore('socket', () => {
           timeout: 3000,
         })
       } else if (chatStore.currentChannelId === channelId) {
-        console.log('🔴 CLIENT: Someone else was revoked, reloading users...')
+        console.log('CLIENT: Someone else was revoked, reloading users...')
         await chatStore.loadChannelUsers(channelId)
       }
     })
@@ -201,7 +230,7 @@ export const useSocketStore = defineStore('socket', () => {
       const { useChatStore } = await import('stores/chat')
       const chatStore = useChatStore()
 
-      console.log('🔴 CLIENT: userWasKicked received:', {
+      console.log('CLIENT: userWasKicked received:', {
         channelId,
         userId,
         currentUserId: auth.user?.id,
@@ -209,7 +238,7 @@ export const useSocketStore = defineStore('socket', () => {
       })
 
       if (auth.user?.id === userId) {
-        console.log('🔴 CLIENT: I was kicked! Leaving channel...')
+        console.log('CLIENT: I was kicked! Leaving channel...')
         if (chatStore.currentChannelId === channelId) {
           chatStore.currentChannelId = null
         }
@@ -222,7 +251,7 @@ export const useSocketStore = defineStore('socket', () => {
           timeout: 3000,
         })
       } else if (chatStore.currentChannelId === channelId) {
-        console.log('🔴 CLIENT: Someone else was kicked, reloading users...')
+        console.log('CLIENT: Someone else was kicked, reloading users...')
         await chatStore.loadChannelUsers(channelId)
       }
     })
@@ -253,6 +282,17 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
   const sendMessage = (channelId: number, message: Message) => {
+    const auth = useAuthStore()
+
+    if (!auth.isOnline) {
+      Notify.create({
+        type: 'warning',
+        message: 'You cannot send messages while offline',
+        position: 'top',
+      })
+      return
+    }
+
     socket.value?.emit('sendMessage', { channelId, message })
   }
 

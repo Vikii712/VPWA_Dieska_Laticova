@@ -175,6 +175,10 @@ export const useChatStore = defineStore('chat', () => {
     currentChannelId.value = channelId
     unreadChannels.value[channelId] = 0
 
+    if (unreadChannels.value[channelId]) {
+      unreadChannels.value[channelId] = 0
+    }
+
     await loadChannelUsers(channelId)
     if (!channelMessages.value[channelId] || channelMessages.value[channelId].length === 0) {
       initChannelMeta(channelId)
@@ -183,6 +187,28 @@ export const useChatStore = defineStore('chat', () => {
 
     const socketStore = useSocketStore()
     socketStore.joinChannel(channelId)
+
+    await nextTick()
+    window.dispatchEvent(new Event('channel-switched'))
+  }
+
+  async function reloadCurrentChannel() {
+    if (!currentChannelId.value) return
+
+    const channelId = currentChannelId.value
+
+    console.log(`Force reloading channel ${channelId}`)
+
+    channelMessages.value[channelId] = []
+
+    channelMeta.value[channelId] = {
+      currentPage: 0,
+      hasMore: true,
+      isLoading: false
+    }
+
+    await loadMessages(channelId, 1)
+    await loadChannelUsers(channelId)
 
     await nextTick()
     window.dispatchEvent(new Event('channel-switched'))
@@ -435,5 +461,6 @@ export const useChatStore = defineStore('chat', () => {
     revokeUser,
     kickUser,
     acceptInvite,
+    reloadCurrentChannel
   }
 })
