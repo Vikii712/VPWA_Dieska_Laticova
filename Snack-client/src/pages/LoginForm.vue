@@ -49,7 +49,7 @@ function onReset(): void {
     </div>
   </div>
   <div class="row q-col-gutter justify-center">
-    <div class="col-11 col-md-8 col-lg-6 q-pa-lg bg-deep-purple-3">
+    <div class="col-11 col-md-8 col-lg-6 q-pa-md sm:q-pa-lg bg-deep-purple-3">
       <q-form @submit="onSubmit" @reset="onReset">
         <q-input
           outlined
