@@ -8,14 +8,13 @@ import { useChatStore } from 'stores/chat'
 import { useSocketStore } from 'stores/socketStore'
 import { useAuthStore } from 'stores/auth'
 import { useCommandStore } from 'stores/commandStore'
-import { useQuasar } from 'quasar'
-
-const $q = useQuasar()
+import {useQuasar} from "quasar";
 
 const chat = useChatStore()
 const auth = useAuthStore()
 const socketStore = useSocketStore()
 const commandStore = useCommandStore()
+const $q = useQuasar()
 
 const rightDrawerOpen = ref(false)
 const leftDrawerMini = ref(true)
@@ -26,6 +25,11 @@ const memberListOpen = computed({
     commandStore.memberListDrawerOpen = val
   }
 })
+
+const miniWidth = computed(() => {
+  return !$q.screen.lt.sm ? 56 : 0
+})
+
 
 const currentChannel = computed(() =>
   chat.channels.find(c => c.id === chat.currentChannelId)
@@ -65,7 +69,6 @@ onMounted(() => {
 
       <q-toolbar class="flex bg-deep-purple-7">
         <q-btn
-          v-if="$q.screen.gt.sm"
           flat dense
           :icon="leftDrawerMini ? 'keyboard_arrow_left' : 'list'"
           @click="toggleLeftDrawer"
@@ -86,7 +89,7 @@ onMounted(() => {
       </q-toolbar>
     </q-header>
 
-    <LeftDrawer :mini="!leftDrawerMini" />
+    <LeftDrawer :mini="!leftDrawerMini" :mini-width="miniWidth"/>
 
     <MemberList v-model:DrawerOpen="memberListOpen" />
 

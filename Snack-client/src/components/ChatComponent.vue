@@ -18,7 +18,7 @@ const isLoadingMore = ref(false)
 const lastScrollHeight = ref(0)
 
 const leftOffset = computed(() =>
-  $q.screen.lt.md ? 0 : (props.mini ? 56 : 300)
+  !$q.screen.lt.sm ? (props.mini ? 300 : 56) : 0
 )
 
 const isMessageMentioningMe = (messageId: number) => {

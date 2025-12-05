@@ -14,6 +14,7 @@ const form = ref({
   lastName: '',
   email: '',
   password: '',
+  activity_status: 'active',
 })
 
 async function onSubmit() {

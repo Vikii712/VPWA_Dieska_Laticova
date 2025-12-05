@@ -28,6 +28,7 @@ interface RegisterPayload {
   lastName: string;
   email: string;
   password: string;
+  activity_status: string;
 }
 
 export const useAuthStore = defineStore('auth', () => {
