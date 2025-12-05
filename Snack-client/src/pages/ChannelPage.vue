@@ -16,7 +16,7 @@ const commandStore = useCommandStore()
 const auth = useAuthStore()
 
 const leftOffset = computed(() =>
-  $q.screen.lt.md ? 0 : (props.mini ? 300 : 56)
+  !$q.screen.lt.sm ? (props.mini ? 300 : 56) : 0
 )
 
 const showCancelDialog = ref(false)

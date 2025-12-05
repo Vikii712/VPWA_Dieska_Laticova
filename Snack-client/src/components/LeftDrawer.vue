@@ -45,6 +45,7 @@ const sortedChannels = computed(() => {
     :mini="props.mini"
     side="left"
     class="bg-deep-purple-7 column"
+    :breakpoint="0"
   >
     <q-item :class="{'bg-purple-10': !props.mini}">
       <q-item-section avatar />
