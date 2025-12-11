@@ -36,7 +36,7 @@ async function sendMessage() {
             message: 'You must be in a channel to leave it',
             position: 'top'
           })
-        } else {
+        } else if(result.message === 'leave') {
           showCancelDialog.value = true
         }
       } else {

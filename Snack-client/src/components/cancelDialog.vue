@@ -2,7 +2,6 @@
 import {ref, watch, defineProps, defineEmits, computed} from 'vue'
 import { useChatStore } from 'stores/chat'
 import { useRouter } from 'vue-router'
-import { api } from 'src/services/api'
 import { useAuthStore } from 'stores/auth'
 
 const auth = useAuthStore()
@@ -32,10 +31,12 @@ const isModerator = computed(() => {
 async function confirmExit() {
   show.value = false
   emit('update:show', false)
-  if (!props.channelId) return
 
-  await api('POST', `/channels/${props.channelId}/leave`)
-  chat.leaveChannel(props.channelId, isModerator.value)
+  console.log("Leaving channel:", chat.currentChannelId)
+  if (!chat.currentChannelId) return
+
+  chat.leaveChannel(chat.currentChannelId)
+
   chat.currentChannelId = null
   await chat.fetchChannels()
   await router.push('/main');

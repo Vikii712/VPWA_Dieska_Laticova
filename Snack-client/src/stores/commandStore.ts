@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { useChatStore } from './chat'
-import { api } from 'src/services/api'
 import { ref } from 'vue'
 import {useAuthStore} from "stores/auth"
 import {useSocketStore} from 'stores/socketStore'
@@ -102,7 +101,8 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Usage: /invite username' }
     }
 
-    if (!chat.currentChannelId) {
+    const channelId = chat.currentChannelId
+    if (!channelId) {
       return { type: 'negative', message: 'You must be in a channel to invite someone.' }
     }
 
@@ -116,23 +116,21 @@ export const useCommandStore = defineStore('command', () => {
     }
 
     try {
-      const result = await api<{ message: string; targetUserId: number }>(
-        'POST',
-        `/channels/${chat.currentChannelId}/invite`,
-        { nickName }
-      )
+      const socketStore = useSocketStore()
+      await socketStore.inviteUser(channelId, nickName)
 
-      if (result.targetUserId) {
-        console.log('📤 Emitting userInvited:', { channelId: chat.currentChannelId, targetUserId: result.targetUserId })
-        socketStore.notifyUserInvited(chat.currentChannelId, result.targetUserId)
+      return {
+        type: 'positive',
+        message: `${nickName} has been invited to the channel.`,
       }
-
-      return { type: 'positive', message: `${nickName} has been invited to the channel.` }
-    } catch (error) {
-      console.error(error)
-      return { type: 'negative', message: 'Failed to invite user.' }
     }
+    catch (e: unknown) {
+        console.error('Error in handleJoin:', e)
+        const msg = e instanceof Error ? e.message : 'Failed to invite user.'
+        return { type: 'negative', message: msg }
+      }
   }
+
 
   async function handleRevoke(parts: string[]): Promise<CommandResult> {
     const [, targetNick] = parts

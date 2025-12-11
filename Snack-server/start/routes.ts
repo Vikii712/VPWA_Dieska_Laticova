@@ -24,7 +24,7 @@ router.post('/channels/:id/messages', [ChannelsController, 'sendMessage']).use(m
 
 router.post('/channels', [ChannelsController, 'createChannel']).use(middleware.auth())
 
-router.post('/channels/:id/leave', [ChannelsController, 'leaveOrDeleteChannel']).use(middleware.auth())
+//router.post('/channels/:id/leave', [ChannelsController, 'leaveOrDeleteChannel']).use(middleware.auth())
 
 router.post('/user/status', [ChannelsController, 'updateUserStatus']).use(middleware.auth())
 

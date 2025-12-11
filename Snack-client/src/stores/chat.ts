@@ -166,11 +166,6 @@ export const useChatStore = defineStore('chat', () => {
       return
     }
 
-    if (currentChannelId.value) {
-      const socketStore = useSocketStore()
-      socketStore.leaveChannel(currentChannelId.value)
-    }
-
     currentChannelId.value = channelId
     unreadChannels.value[channelId] = 0
 
@@ -239,9 +234,24 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  function leaveChannel(channelId: number, isModerator: boolean) {
+  function leaveChannel(channelId: number) {
+    if (!channelId) return
     const socketStore = useSocketStore()
-    socketStore.notifyUserLeft(channelId, isModerator)
+    const auth = useAuthStore()
+
+    const userId = auth.user?.id
+    if (!userId) {
+      console.error('No userId available for leaveChannel')
+      return
+    }
+
+    try {
+      socketStore.leaveChannel(channelId, userId)
+
+    } catch (err) {
+      console.error('Failed to leave channel:', err)
+      throw err
+    }
   }
 
   async function joinOrCreateChannel(name: string, type: 'public' | 'private' = 'public') {
@@ -264,11 +274,6 @@ export const useChatStore = defineStore('chat', () => {
 
       if (channel) {
         await loadChannel(channel.id)
-
-        if (result.joined && channel.public) {
-          const socketStore = useSocketStore()
-          socketStore.notifyUserJoined(channel.id)
-        }
 
         return {
           channel: channel,

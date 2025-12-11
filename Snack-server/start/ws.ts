@@ -3,6 +3,9 @@ import { Server } from 'socket.io'
 import server from '@adonisjs/core/services/server'
 import db from "@adonisjs/lucid/services/db";
 import {wsAuthMiddleware} from "#middleware/ws_auth";
+import User from "#models/user";
+import Message from "#models/message";
+import Channel from "#models/channel";
 
 export let io: Server
 
@@ -73,6 +76,8 @@ app.ready(() => {
 
       })
 
+
+
     socket.on('sendMessage', async (data, callback) => {
       try {
         const { channelId, message } = data
@@ -102,18 +107,86 @@ app.ready(() => {
       }
     })
 
-    socket.on('userInvited', async ({ channelId, targetUserId }) => {
-      console.log('SERVER: userInvited received:', { channelId, targetUserId })
+    socket.on('inviteUser', async ({ channelId, nickName }, callback) => {
+      try {
+        const targetUser = await User.query().where('nick', nickName).first()
+        if (!targetUser) return callback({ status: 'error', message: 'User not found' })
 
-      const targetSockets = getUserSockets(targetUserId)
-      for (const socketId of targetSockets) {
-        io.to(socketId).emit('userWasInvited', {
-          channelId
+        const existing = await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', targetUser.id)
+          .first()
+
+        if (existing) {
+          return callback({ status: 'error', message: `${nickName} is already in the channel or invited.` })
+        }
+
+        await db.table('channel_users').insert({
+          channel_id: channelId,
+          user_id: targetUser.id,
+          invited: true
+        })
+
+        const targetSockets = getUserSockets(targetUser.id)
+        for (const socketId of targetSockets) {
+          io.to(socketId).emit('userWasInvited', { channelId })
+        }
+
+        callback({ status: 'ok', targetUserId: targetUser.id })
+      } catch (err) {
+        console.error('inviteUser error', err)
+        callback({ status: 'error', message: 'Server error' })
+      }
+    })
+
+    socket.on('leaveChannel', async ({ channelId , userId}) => {
+      if (!userId || !channelId) {
+        console.log("No valid userId")
+        return
+      }
+      console.log("UserId:", userId)
+
+
+      const userInChannel = await db
+        .from('channel_users')
+        .where('channel_id', channelId)
+        .where('user_id', userId)
+        .first()
+
+      if (!userInChannel) return
+
+      const channel = await Channel.find(channelId)
+      if (!channel) return
+
+      if (channel.moderatorId === userId) {
+        io.to(`channel-${channelId}`).emit('channelDeleted', { channelId })
+
+        const socketsInRoom = await io.in(`channel-${channelId}`).fetchSockets()
+        for (const s of socketsInRoom) {
+          s.leave(`channel-${channelId}`)
+        }
+
+        await Message.query().where('channel_id', channelId).delete()
+        await db.from('channel_users').where('channel_id', channelId).delete()
+        await channel.delete()
+
+      } else {
+        await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', userId)
+          .delete()
+
+        socket.leave(`channel-${channelId}`)
+
+        io.to(`channel-${channelId}`).emit('channelUsersUpdated', {
+          channelId,
+          userId,
         })
       }
-
-      console.log('SERVER: Emitted userWasInvited to user ' + targetUserId)
     })
+
 
     socket.on('joinChannel', ({ userId: joinUserId, channelId }: { userId: number; channelId: number }) => {
       console.log(`joinChannel from user:`, userId, 'socket:', socket.id, 'channel:', channelId)
@@ -122,20 +195,14 @@ app.ready(() => {
         userSockets[joinUserId].push(socket.id)
       }
       socket.join(`channel-${channelId}`)
-    })
 
-    socket.on('userJoinedChannel', ({channelId}) => {
-      io.to(`channel-${channelId}`).emit('channelUsersUpdated', {channelId})
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
     })
 
     socket.on('userLeftChannel', ({channelId}) => {
       io.to(`channel-${channelId}`).emit('channelUsersUpdated', {channelId})
     })
 
-    socket.on('deleteChannel', ({ channelId }) => {
-      console.log('deleteChannel received for channel:', channelId)
-      io.to(`channel-${channelId}`).emit('channelDeleted', { channelId })
-    })
 
     socket.on('typing', async (data) => {
       try {
