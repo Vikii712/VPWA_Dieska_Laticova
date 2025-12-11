@@ -343,6 +343,28 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value?.emit('userKicked', { channelId, targetUserId })
   }
 
+  async function acceptInvite(channelId: number): Promise<boolean> {
+    if (!socket.value) throw new Error('Socket not connected')
+
+    return await new Promise((resolve, reject) => {
+      socket.value!.emit(
+        'acceptInvite',
+        { channelId },
+        async (response: { status: string; message?: string }) => {
+          if (response?.status === 'ok') {
+            const { useChatStore } = await import('stores/chat')
+            const chatStore = useChatStore()
+
+            await chatStore.fetchChannels()
+            resolve(true)
+          } else {
+            reject(new Error(response?.message || 'acceptInvite failed'))
+          }
+        }
+      )
+    })
+  }
+
   function init(token?: string) {
     if (socket.value?.connected) return
     const _token = token || useAuthStore().token
@@ -382,5 +404,6 @@ export const useSocketStore = defineStore('socket', () => {
     notifyUserRevoked,
     notifyUserKicked,
     notifyUserInvited,
+    acceptInvite,
   }
 })

@@ -403,30 +403,4 @@ export default class ChannelsController {
     })
   }
 
-  async acceptInvite({ auth, params, response }: HttpContext) {
-    const user = auth.getUserOrFail()
-    const channelId = params.id
-
-    const channelUser = await db
-      .from('channel_users')
-      .where('channel_id', channelId)
-      .where('user_id', user.id)
-      .first()
-
-    if (!channelUser) {
-      return response.notFound({ message: 'Invitation not found.' })
-    }
-
-    if (!channelUser.invited) {
-      return response.badRequest({ message: 'You are already a member.' })
-    }
-
-    await db
-      .from('channel_users')
-      .where('channel_id', channelId)
-      .where('user_id', user.id)
-      .update({ invited: false })
-
-    return response.ok({ message: 'Invitation accepted.' })
-  }
 }

@@ -414,19 +414,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function acceptInvite(channelId: number) {
-    try {
-      await api('POST', `/channels/${channelId}/accept-invite`)
-      await fetchChannels()
-
-      const socketStore = useSocketStore()
-      socketStore.notifyUserJoined(channelId)
-
-      return true
-    } catch (error) {
-      console.error('Error accepting invite:', error)
-      throw error
-    }
+    const socketStore = useSocketStore()
+    return await socketStore.acceptInvite(channelId)
   }
+
 
   return {
     channels,

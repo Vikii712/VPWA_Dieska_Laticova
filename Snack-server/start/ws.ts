@@ -4,10 +4,12 @@ import server from '@adonisjs/core/services/server'
 import db from "@adonisjs/lucid/services/db";
 import {wsAuthMiddleware} from "#middleware/ws_auth";
 
+export let io: Server
+
 const userSockets: Record<number, string[]> = {};
 
 app.ready(() => {
-  const io = new Server(server.getNodeServer(), {
+  io = new Server(server.getNodeServer(), {
     cors: {
       origin: '*',
     },
@@ -30,6 +32,46 @@ app.ready(() => {
       console.warn(`Socket ${socket.id} connected without userId`)
       return
     }
+
+    socket.on('acceptInvite', async({channelId}, callback)=>{
+      try {
+        const userId = socket.data.userId
+        if (!userId) {
+          return callback?.({ status: 'error', message: 'Not authenticated' })
+        }
+
+        const channelUser = await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', userId)
+          .first()
+
+
+        if (!channelUser) {
+          return callback?.({ status: 'error', message: 'Invitation not found.' })
+        }
+
+        if (!channelUser.invited) {
+          return callback?.({ status: 'error', message: 'Already a member.' })
+        }
+
+        await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', userId)
+          .update({ invited: false })
+
+        callback?.({ status: 'ok', message: 'Invitation accepted.' })
+
+        io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+
+        console.log(`User ${userId} accepted invite to channel ${channelId}`)
+      } catch (err) {
+        console.error('acceptInvite socket error', err)
+        callback?.({ status: 'error', message: 'Server error' })
+      }
+
+      })
 
     socket.on('sendMessage', async (data, callback) => {
       try {
