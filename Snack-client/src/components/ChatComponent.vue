@@ -112,7 +112,11 @@ watch(() => chat.currentChannelId, async () => {
 </script>
 
 <template>
-  <div class="chat-container" :style="{ left: leftOffset + 'px', width: `calc(100% - ${leftOffset}px)` }">
+  <div
+    class="chat-container"
+    :style="{
+    left: $q.screen.lt.sm ? '0px' : leftOffset + 'px',
+    width: $q.screen.lt.sm ? '100%' : `calc(100% - ${leftOffset}px)`}">
     <div
       v-if="!chat.currentChannelId"
       class="column items-center text-grey-5 full-height justify-center"
@@ -149,7 +153,8 @@ watch(() => chat.currentChannelId, async () => {
       <q-timeline
         v-if="chat.messages.length > 0"
         color="deep-purple-6"
-        class="q-px-lg q-pb-xl q-pt-md"
+        class="q-pb-xl q-pt-md"
+        :class="$q.screen.lt.sm ? 'q-px-sm' : 'q-px-lg'"
         layout="dense"
       >
         <q-timeline-entry
@@ -173,7 +178,7 @@ watch(() => chat.currentChannelId, async () => {
             'bg-teal-10': !isMessageMentioningMe(message.id) && message.author.id === auth.user?.id,
             'bg-blue-grey-10': !isMessageMentioningMe(message.id) && message.author.id !== auth.user?.id
           }"
-            style="white-space: pre-line;"
+            style="white-space: pre-line; word-break: break-word; overflow-wrap: break-word;"
           >
             {{ message.content }}
           </div>
@@ -197,17 +202,28 @@ watch(() => chat.currentChannelId, async () => {
   top: 0;
   right: 0;
   bottom: 20px;
-  height:100vh;
+  height: 100vh;
+  max-width: 100% !important;
+  box-sizing: border-box;
   overflow: hidden;
   transition: left 0.3s, width 0.3s;
 }
 
 .chat-scroll-area {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-x: hidden !important;
 }
 
-.rounded-borders {
-  border-radius: 8px;
+.q-timeline {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+@media (min-width: 600px) {
+  .q-timeline {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
 }
 </style>
