@@ -328,19 +328,14 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
 
-  const notifyUserInvited = (channelId: number, targetUserId: number) => {
-    console.log('notifyUserInvited called:', { channelId, targetUserId, connected: connected.value })
-    socket.value?.emit('userInvited', { channelId, targetUserId })
+  const revokeUser = (channelId: number, targetNick: string) => {
+    console.log('revokeUser called:', { channelId, targetNick, connected: connected.value })
+    socket.value?.emit('userRevoked', { channelId, targetNick })
   }
 
-  const notifyUserRevoked = (channelId: number, targetUserId: number) => {
-    console.log('notifyUserRevoked called:', { channelId, targetUserId, connected: connected.value })
-    socket.value?.emit('userRevoked', { channelId, targetUserId })
-  }
-
-  const notifyUserKicked = (channelId: number, targetUserId: number) => {
-    console.log('notifyUserKicked called:', { channelId, targetUserId, connected: connected.value })
-    socket.value?.emit('userKicked', { channelId, targetUserId })
+  const kickUser = (channelId: number, targetNick: string) => {
+    console.log('kickUser called:', { channelId, targetNick, connected: connected.value })
+    socket.value?.emit('userKicked', { channelId, targetNick })
   }
 
   async function inviteUser(channelId: number, nickName: string) {
@@ -413,11 +408,10 @@ export const useSocketStore = defineStore('socket', () => {
     joinChannel,
     leaveChannel,
     sendMessage,
+    revokeUser,
+    kickUser,
     init,
     inviteUser,
-    notifyUserRevoked,
-    notifyUserKicked,
-    notifyUserInvited,
     acceptInvite,
   }
 })

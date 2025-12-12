@@ -1,21 +1,25 @@
 import { defineStore } from 'pinia'
 import { useChatStore } from './chat'
 import { ref } from 'vue'
-import {useAuthStore} from "stores/auth"
-import {useSocketStore} from 'stores/socketStore'
+import { useAuthStore } from 'stores/auth'
+import { useSocketStore } from 'stores/socketStore'
+
+interface ChannelUser {
+  id: number
+  nick: string
+}
 
 export const useCommandStore = defineStore('command', () => {
   const chat = useChatStore()
-
-  const auth =  useAuthStore()
-  const socketStore =  useSocketStore()
+  const auth = useAuthStore()
+  const socketStore = useSocketStore()
 
   const memberListDrawerOpen = ref(false)
 
   type CommandResult = {
     type: 'positive' | 'negative' | 'warning' | 'dialog'
     message: string
-  } | void | null
+  } | null
 
   async function processCommand(input: string): Promise<CommandResult> {
     const parts = input.trim().split(/\s+/)
@@ -29,7 +33,7 @@ export const useCommandStore = defineStore('command', () => {
       case '/join':
         return await handleJoin(parts)
       case '/cancel':
-        return { type: 'dialog' , message: 'leave' }
+        return { type: 'dialog', message: 'leave' }
       case '/list':
         return openMemberList()
       case '/quit':
@@ -37,9 +41,9 @@ export const useCommandStore = defineStore('command', () => {
       case '/invite':
         return await handleInvite(parts)
       case '/revoke':
-        return await handleRevoke(parts)
+        return handleRevoke(parts)
       case '/kick':
-        return await handleKick(parts)
+        return handleKick(parts)
       default:
         return { type: 'warning', message: `Unknown command: ${cmd}` }
     }
@@ -52,7 +56,6 @@ export const useCommandStore = defineStore('command', () => {
 
     chat.currentChannelId = null
     chat.currentChannelUsers.splice(0, chat.currentChannelUsers.length)
-
     memberListDrawerOpen.value = false
 
     return null
@@ -111,28 +114,25 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Current channel not found.' }
     }
 
-    if (channel.moderatorId !== chat.moderatorId && !channel.public) {
+    if (channel.moderatorId !== auth.user?.id && !channel.public) {
       return { type: 'negative', message: 'Only the channel moderator can invite users.' }
     }
 
     try {
-      const socketStore = useSocketStore()
       await socketStore.inviteUser(channelId, nickName)
 
       return {
         type: 'positive',
-        message: `${nickName} has been invited to the channel.`,
+        message: `${nickName} has been invited to the channel.`
       }
+    } catch (e: unknown) {
+      console.error('Error in handleInvite:', e)
+      const msg = e instanceof Error ? e.message : 'Failed to invite user.'
+      return { type: 'negative', message: msg }
     }
-    catch (e: unknown) {
-        console.error('Error in handleJoin:', e)
-        const msg = e instanceof Error ? e.message : 'Failed to invite user.'
-        return { type: 'negative', message: msg }
-      }
   }
 
-
-  async function handleRevoke(parts: string[]): Promise<CommandResult> {
+  function handleRevoke(parts: string[]): CommandResult {
     const [, targetNick] = parts
 
     if (!targetNick) {
@@ -156,27 +156,12 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Only the channel moderator can revoke users.' }
     }
 
-    try {
-      const targetUserId = await chat.revokeUser(chat.currentChannelId, targetNick)
+    socketStore.revokeUser(chat.currentChannelId, targetNick)
 
-      console.log('Got targetUserId from API:', targetUserId)
-
-      if (targetUserId) {
-        console.log(' Emitting userRevoked:', { channelId: chat.currentChannelId, targetUserId })
-        socketStore.notifyUserRevoked(chat.currentChannelId, targetUserId)
-      } else {
-        console.warn('No targetUserId returned from API!')
-      }
-
-      return { type: 'positive', message: `${targetNick} has been removed from the channel.` }
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to revoke user.'
-      console.error(msg)
-      return { type: 'negative', message: msg }
-    }
+    return { type: 'positive', message: `Revoke request sent for ${targetNick}.` }
   }
 
-  async function handleKick(parts: string[]): Promise<CommandResult> {
+  function handleKick(parts: string[]): CommandResult {
     const [, targetNick] = parts
 
     if (!targetNick) {
@@ -196,30 +181,17 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Use /revoke for private channels' }
     }
 
-    const moderator = chat.currentChannelUsers.find(u => u.id === channel.moderatorId)
+    const moderator = chat.currentChannelUsers.find(
+      (u: ChannelUser) => u.id === channel.moderatorId
+    )
 
     if (moderator && targetNick === moderator.nick) {
       return { type: 'negative', message: 'Cannot kick the channel moderator' }
     }
 
-    try {
-      const targetUserId = await chat.kickUser(chat.currentChannelId, targetNick)
+    socketStore.kickUser(chat.currentChannelId, targetNick)
 
-      console.log(' Got targetUserId from API:', targetUserId)
-
-      if (targetUserId) {
-        console.log( 'Emitting userKicked:', { channelId: chat.currentChannelId, targetUserId })
-        socketStore.notifyUserKicked(chat.currentChannelId, targetUserId)
-      } else {
-        console.warn('No targetUserId returned from API!')
-      }
-
-      return { type: 'positive', message: `${targetNick} has been kicked from the channel.` }
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'Failed to kick user.'
-      console.error(msg)
-      return { type: 'negative', message: msg }
-    }
+    return { type: 'positive', message: `Kick request sent for ${targetNick}.` }
   }
 
   return {

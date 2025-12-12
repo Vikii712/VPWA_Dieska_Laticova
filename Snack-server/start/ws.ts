@@ -293,29 +293,70 @@ app.ready(() => {
         console.error('Error broadcasting typing:', error)
       }
     })
-    socket.on('userRevoked', async ({ channelId, targetUserId }) => {
-
-      io.to(`channel-${channelId}`).emit('userWasRevoked', {
-        channelId,
-        userId: targetUserId
-      })
 
 
-      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+    socket.on('userRevoked', async ({ channelId, targetNick, moderatorId }) => {
+      try {
+
+        const channel = await Channel.find(channelId)
+        if (!channel) return console.warn('Channel not found:', channelId)
+
+        if (channel.public) return console.warn('Cannot revoke in public channel')
+        if (channel.moderatorId !== moderatorId) return console.warn('Only moderator can revoke')
+
+        const targetUser = await User.query().where('nick', targetNick).first()
+        if (!targetUser) return console.warn('Target user not found:', targetNick)
+
+        if (targetUser.id === moderatorId) return console.warn('Cannot revoke yourself')
+
+        await db.from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', targetUser.id)
+          .delete()
+
+        io.to(`channel-${channelId}`).emit('userWasRevoked', {
+          channelId,
+          userId: targetUser.id
+        })
+
+        io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+
+      } catch (err) {
+        console.error('Error revoking user:', err)
+      }
     })
 
-    socket.on('userKicked', async ({ channelId, targetUserId }) => {
-      console.log('SERVER: userKicked received:', { channelId, targetUserId })
 
-      io.to(`channel-${channelId}`).emit('userWasKicked', {
-        channelId,
-        userId: targetUserId
-      })
+    socket.on('userKicked', async ({ channelId, targetNick, moderatorId }) => {
+      try {
+        const channel = await Channel.find(channelId)
+        if (!channel) return console.warn('Channel not found:', channelId)
 
-      console.log('SERVER: Emitted userWasKicked to channel-' + channelId)
+        if (!channel.public) return console.warn('Cannot kick in private channel')
 
-      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+        const targetUser = await User.query().where('nick', targetNick).first()
+        if (!targetUser) return console.warn('Target user not found:', targetNick)
+
+        if (targetUser.id === channel.moderatorId) return console.warn('Cannot kick moderator')
+        if (targetUser.id === moderatorId) return console.warn('Cannot kick yourself')
+
+        await db.from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', targetUser.id)
+          .delete()
+
+        io.to(`channel-${channelId}`).emit('userWasKicked', {
+          channelId,
+          userId: targetUser.id
+        })
+
+        io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+
+      } catch (err) {
+        console.error('Error kicking user:', err)
+      }
     })
+
 
     socket.on('statusChange', async (data: { status: string }) => {
       try {

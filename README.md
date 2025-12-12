@@ -11,7 +11,7 @@ https://github.com/kurice/vpwa26
 
 [✓] pri opustení kanála, alebo trvalom vyhodení z kanála je daný kanál odobratý zo zoznamu
 
-[] pri pozvánke do kanála je daný kanál zvýraznený a topovaný
+[✓] pri pozvánke do kanála je daný kanál zvýraznený a topovaný
 
 [✓] v zozname môže cez používateľské rozhranie kanál vytvoriť, opustiť, a ak je správcom aj zrušiť
 
@@ -31,9 +31,10 @@ https://github.com/kurice/vpwa26
 
 [✓] do verejného kanála sa môže pridať ľubovolný používateľ cez príkaz /join channelName (ak kanál neexistuje, automaticky sa vytvorí)
 
-[] do verejného kanála môže člen kanála pozvať iného používateľa príkazom /invite nickName
+[✓] do verejného kanála môže člen kanála pozvať iného používateľa príkazom /invite nickName
 
-[✓] vo verejnom kanáli môže člen "vyhodiť" iného člena príkazom /kick nickName. 
+[✓] vo verejnom kanáli môže člen "vyhodiť" iného člena príkazom /kick nickName.
+
 [] ak tak spravia aspoň 3 členovia, používateľ má "trvalý" ban pre daný kanál. správca môže používateľa vyhodiť "natrvalo" kedykoľvek príkazom /kick nickName, alebo naopak "obnovit" používateľovi prístup do kanála cez príkaz /invite
 
 [✓] nickName ako aj channelName sú unikátne
@@ -48,23 +49,23 @@ https://github.com/kurice/vpwa26
 
 [✓] používateľ si môže pozrieť kompletnú históriu správ
 
-[] efektívny inifinite scroll
+[✓] efektívny inifinite scroll
 
 [✓] používateľ je informovaný o každej novej správe prostredníctvom notifikácie
 
-[] notifikácia sa vystavuje iba ak aplikácia nie je v stave "visible" (pozrite quasar docu App Visibility)
+[✓] notifikácia sa vystavuje iba ak aplikácia nie je v stave "visible" (pozrite quasar docu App Visibility)
 
-[] notifikácia obsahuje časť zo správy a odosielateľa
+[✓] notifikácia obsahuje časť zo správy a odosielateľa
 
-[] oužívateľ si môže nastaviť, aby mu chodili notifikácie iba pre správy, ktoré sú mu adresované
+[✓] oužívateľ si môže nastaviť, aby mu chodili notifikácie iba pre správy, ktoré sú mu adresované
 
-[] používateľ si môže nastaviť stav (online, DND, offline)
+[✓] používateľ si môže nastaviť stav (online, DND, offline)
 
-[] stav sa zobrazuje používateľom
+[✓] stav sa zobrazuje používateľom
 
-[] ak je nastavený DND stav, neprichádzajú notifikácie
+[✓] ak je nastavený DND stav, neprichádzajú notifikácie
 
-[] ak je nastavený offline stav, neprichádzajú používateľovi správy, po prepnutí do online sú kanály automaticky aktualizované
+[✓] ak je nastavený offline stav, neprichádzajú používateľovi správy, po prepnutí do online sú kanály automaticky aktualizované
 
 [✓] používateľ si môže pozrieť zoznam členov kanála (ak je tiež členom kanála) príkazom /list
 
