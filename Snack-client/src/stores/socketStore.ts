@@ -58,7 +58,7 @@ export const useSocketStore = defineStore('socket', () => {
     })
 
     socket.value.on('newMessage', async (data: Message & { channelName?: string }) => {
-      const {useChatStore} = await import('stores/chat')
+      const { useChatStore } = await import('stores/chat')
       const chatStore = useChatStore()
       const authStore = useAuthStore()
 
@@ -77,11 +77,7 @@ export const useSocketStore = defineStore('socket', () => {
 
       const notifPref = authStore.notificationPreference
 
-      if (notifPref === 'none') {
-        return
-      }
-
-      if (authStore.isDND) {
+      if (notifPref === 'none' || authStore.isDND) {
         return
       }
 
@@ -93,7 +89,7 @@ export const useSocketStore = defineStore('socket', () => {
         Notify.create({
           type: isMentioned ? 'warning' : 'info',
           color: isMentioned ? 'yellow-8' : 'blue',
-          ...(isMentioned && {icon: 'alternate_email'}),
+          ...(isMentioned && { icon: 'alternate_email' }),
           message: isMentioned
             ? `${data.author.nick} mentioned you in ${data.channelName || `channel #${data.channelId}`}`
             : `New message in ${data.channelName || `channel #${data.channelId}`}`,
@@ -110,24 +106,27 @@ export const useSocketStore = defineStore('socket', () => {
           timeout: 3000,
         })
       }
+
+      // Push browser notification
       if (window.Notification && document.hidden) {
         if (Notification.permission === 'granted') {
           new Notification(
             `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
-            {body: `${data.author.nick}: ${data.content.slice(0, 80)}`}
+            { body: `${data.author.nick}: ${data.content.slice(0, 80)}` }
           )
         } else if (Notification.permission !== 'denied') {
           void Notification.requestPermission().then(permission => {
             if (permission === 'granted') {
               new Notification(
                 `Nová správa v ${data.channelName || `kanál #${data.channelId}`}`,
-                {body: `${data.author.nick}: ${data.content.slice(0, 80)}`}
+                { body: `${data.author.nick}: ${data.content.slice(0, 80)}` }
               )
             }
           })
         }
       }
     })
+
 
     socket.value.on('userTyping', (data: { channelId: number; userId: number; nick: string }) => {
       const authStore = useAuthStore()
@@ -301,7 +300,7 @@ export const useSocketStore = defineStore('socket', () => {
     console.log('Emitting joinChannel', { userId, channelId })
   }
 
-  const sendMessage = (channelId: number, message: Message) => {
+  const sendMessage = (channelId: number, content: string) => {
     const auth = useAuthStore()
 
     if (!auth.isOnline) {
@@ -313,8 +312,21 @@ export const useSocketStore = defineStore('socket', () => {
       return
     }
 
-    socket.value?.emit('sendMessage', { channelId, message })
+    if (!socket.value || !socket.value.connected) {
+      console.warn('Socket not connected, dropping message.')
+      return
+    }
+
+    console.log('Sending message through socket:', { channelId, content })
+
+    socket.value.emit('sendMessage', {
+      channelId,
+      message: {
+        content
+      }
+    })
   }
+
 
   const notifyUserInvited = (channelId: number, targetUserId: number) => {
     console.log('notifyUserInvited called:', { channelId, targetUserId, connected: connected.value })

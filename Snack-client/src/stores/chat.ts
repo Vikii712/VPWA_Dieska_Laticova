@@ -292,27 +292,14 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(content: string) {
+  function sendMessage(content: string) {
     if (!currentChannelId.value) return
     const socketStore = useSocketStore()
 
-    try {
-      const { message } = await api<{ message: Message }>(
-        'POST',
-        `/channels/${currentChannelId.value}/messages`,
-        { content }
-      )
-
-      addMessage(message)
-
-      socketStore.sendMessage(currentChannelId.value, message)
-      await nextTick()
-      window.dispatchEvent(new Event('new-message-received'))
-
-    } catch (error) {
-      console.error('Error sending message:', error)
-    }
+    socketStore.sendMessage(currentChannelId.value, content)
   }
+
+
 
   function addMessage(message: Message) {
     const channelId = message.channelId
@@ -331,6 +318,7 @@ export const useChatStore = defineStore('chat', () => {
     channelMessages.value[channelId].push(message)
 
     console.log(`Message ${message.id} added to channel ${channelId}`)
+    console.log('content:',message)
 
     if (
       channelId !== currentChannelId.value &&

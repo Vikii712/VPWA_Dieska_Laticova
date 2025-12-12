@@ -51,7 +51,7 @@ async function sendMessage() {
     return
   }
 
-  await chat.sendMessage(text)
+  chat.sendMessage(text)
   message.value = ''
 }
 

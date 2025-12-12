@@ -6,6 +6,7 @@ import {wsAuthMiddleware} from "#middleware/ws_auth";
 import User from "#models/user";
 import Message from "#models/message";
 import Channel from "#models/channel";
+import Mention from "#models/mention";
 
 export let io: Server
 
@@ -76,36 +77,97 @@ app.ready(() => {
 
       })
 
-
-
     socket.on('sendMessage', async (data, callback) => {
       try {
+        const userId = socket.data.userId
+        if (!userId) {
+          console.warn('Socket missing userId')
+          return callback?.({ status: 'error', error: 'Not authenticated' })
+        }
+
         const { channelId, message } = data
+
+        if (!message?.content?.trim()) {
+          return callback?.({ status: 'error', error: 'Content missing' })
+        }
+
+        const isMember = await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', userId)
+          .first()
+
+        if (!isMember) {
+          return callback?.({ status: 'error', error: 'Not a member of channel' })
+        }
+
+        const savedMessage = await Message.create({
+          channelId,
+          createdBy: userId,
+          content: message.content,
+          typing: false
+        })
+
+        await savedMessage.load('author')
+
+        await processMentions(savedMessage.content, savedMessage.id)
+        await savedMessage.load('mentions')
+
+        const dto = {
+          id: savedMessage.id,
+          content: savedMessage.content,
+          createdAt: savedMessage.createdAt.toISO(),
+          channelId,
+          author: {
+            id: savedMessage.author.id,
+            nick: savedMessage.author.nick
+          },
+          typing: false,
+          mentions: savedMessage.mentions.map(m => ({
+            id: m.id,
+            mentionedId: m.mentionedId
+          }))
+        }
+
         const usersInChannel = await db
           .from('channel_users')
           .where('channel_id', channelId)
           .select('user_id')
-        const channel = await db.from('channels').where('id', channelId).first()
 
         let sentCount = 0
         for (const { user_id } of usersInChannel) {
           const sockets = getUserSockets(user_id)
           for (const socketId of sockets) {
-            io.to(socketId).emit('newMessage', {
-              ...message,
-              channelId,
-              channelName: channel?.name,
-            })
+            io.to(socketId).emit('newMessage', dto)
             sentCount++
           }
         }
 
-        if (callback) callback({ status: 'ok', sentTo: sentCount })
+        callback?.({ status: 'ok', sentTo: sentCount })
+
       } catch (error) {
         console.error('Error broadcasting message:', error)
-        if (callback) callback({ status: 'error', error: 'Failed to broadcast message' })
+        callback?.({ status: 'error', error: 'Failed to broadcast message' })
       }
     })
+
+
+    async function processMentions(messageContent: string, messageId: number) {
+      const mentionRegex = /@(\w+)/g
+      const mentions = Array.from(messageContent.matchAll(mentionRegex), m => m[1])
+
+      if (!mentions.length) return
+
+      for (const nick of mentions) {
+        const user = await User.query().where('nick', nick).first()
+        if (!user) continue
+
+        await Mention.create({
+          messageId,
+          mentionedId: user.id
+        })
+      }
+    }
 
     socket.on('inviteUser', async ({ channelId, nickName }, callback) => {
       try {
