@@ -11,7 +11,12 @@ export default class ChannelsController {
     const user = auth.getUserOrFail()
 
     await user.load('channels', (query) => {
-      query.pivotColumns(['invited'])
+      query.pivotColumns(['invited', 'member'])
+        .where((subQuery) => {
+          subQuery
+            .wherePivot('member', true)
+            .orWherePivot('invited', true)
+        })
     })
 
     return response.ok({
@@ -24,6 +29,7 @@ export default class ChannelsController {
       }))
     })
   }
+
 
   async getChannelMessages({ auth, params, request, response }: HttpContext) {
     const user = auth.getUserOrFail()
@@ -85,10 +91,12 @@ export default class ChannelsController {
       .select(['users.id', 'users.nick', 'users.activity_status'])
       .join('channel_users', 'users.id', '=', 'channel_users.user_id')
       .where('channel_users.channel_id', channelId)
+      .where('channel_users.member', true)
       .where('channel_users.invited', false)
 
     return response.json(users)
   }
+
 
   async updateUserStatus({ auth, request, response }: HttpContext) {
     const { status } = request.only(['status'])
@@ -112,18 +120,31 @@ export default class ChannelsController {
       return response.badRequest({ message: 'You must provide a valid name.' })
     }
 
-    const isPublic = (type === 'public')
+    const isPublic = type === 'public'
 
-    let channel = await db.from('channels').where('name', name).first()
+    let channel = await db.from('channels').where('name', name.trim()).first()
 
-    if(channel) {
-      const isMember = await db
+    if (channel) {
+      const existing = await db
         .from('channel_users')
         .where('channel_id', channel.id)
         .where('user_id', user.id)
         .first()
 
-      if(isMember) {
+      if (existing) {
+        if (existing.ban >= 3) {
+          return response.badRequest({
+            message: 'You are permanently banned from this channel.'
+          })
+        }
+
+        await db
+          .from('channel_users')
+          .where('id', existing.id)
+          .update({ member: true })
+
+        io.emit('UserJoinedChannel', { channel_id: channel.id })
+
         return response.ok({
           channel: {
             id: channel.id,
@@ -141,12 +162,12 @@ export default class ChannelsController {
 
       await db.table('channel_users').insert({
         channel_id: channel.id,
-        user_id: user.id
+        user_id: user.id,
+        member: true,
+        ban: 0
       })
 
-      io.emit('UserJoinedChannel', {
-        channel_id: channel.id,
-      })
+      io.emit('UserJoinedChannel', { channel_id: channel.id })
 
       return response.ok({
         channel: {
@@ -159,27 +180,66 @@ export default class ChannelsController {
       })
     }
 
-    channel = await Channel.create({
-      name,
-      public: isPublic,
-      moderatorId: user.id,
-    })
+    try {
+      const result = await db.table('channels').insert({
+        name: name.trim(),
+        public: isPublic ? 1 : 0,
+        moderator_id: user.id,
+      })
 
-    await db.table('channel_users').insert({
-      channel_id: channel.id,
-      user_id: user.id
-    })
+      let insertId: number
 
-    return response.ok({
-      channel: {
-        id: channel.id,
-        name: channel.name,
-        public: channel.public,
-        moderator_id: channel.moderatorId,
-      },
-      joined: false
-    })
+      if (Array.isArray(result)) {
+        insertId = result[0]
+      } else if (typeof result === 'number') {
+        insertId = result
+      } else {
+        return response.badRequest({ message: 'Failed to create channel - unexpected result format.' })
+      }
+
+      const newChannel = await db
+        .from('channels')
+        .where('id', Number(insertId))
+        .first()
+
+      if (!newChannel) {
+        return response.badRequest({ message: 'Failed to create channel - database error.' })
+      }
+
+      await db.table('channel_users').insert({
+        channel_id: newChannel.id,
+        user_id: user.id,
+        member: 1,
+        invited: 0,
+        ban: 0
+      })
+
+      io.emit('UserJoinedChannel', { channel_id: newChannel.id })
+
+      return response.ok({
+        channel: {
+          id: newChannel.id,
+          name: newChannel.name,
+          public: Boolean(newChannel.public),
+          moderator_id: newChannel.moderator_id,
+        },
+        joined: true
+      })
+    } catch (error) {
+      if (error.code === 'SQLITE_CONSTRAINT' || error.errno === 19) {
+        return response.badRequest({
+          message: 'A channel with this name already exists.'
+        })
+      }
+
+      return response.badRequest({
+        message: 'Failed to create channel.',
+        error: error.message || 'Unknown error'
+      })
+    }
   }
+
+
 
   async inviteUser({ auth, params, request, response }: HttpContext) {
     const user = auth.getUserOrFail()

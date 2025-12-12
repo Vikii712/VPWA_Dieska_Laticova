@@ -242,14 +242,10 @@ export const useChatStore = defineStore('chat', () => {
     const auth = useAuthStore()
 
     const userId = auth.user?.id
-    if (!userId) {
-      console.error('No userId available for leaveChannel')
-      return
-    }
+    if (!userId) return
 
     try {
       socketStore.leaveChannel(channelId, userId)
-
     } catch (err) {
       console.error('Failed to leave channel:', err)
       throw err
@@ -293,6 +289,7 @@ export const useChatStore = defineStore('chat', () => {
       throw new Error('Failed to join or create channel.')
     }
   }
+
 
   function sendMessage(content: string) {
     if (!currentChannelId.value) return

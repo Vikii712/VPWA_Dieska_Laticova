@@ -118,8 +118,10 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Only the channel moderator can invite users.' }
     }
 
+    const isModerator = channel.moderatorId === auth.user?.id
+
     try {
-      await socketStore.inviteUser(channelId, nickName)
+      await socketStore.inviteUser(channelId, nickName, isModerator)
 
       return {
         type: 'positive',
@@ -189,9 +191,15 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Cannot kick the channel moderator' }
     }
 
-    socketStore.kickUser(chat.currentChannelId, targetNick)
+    const myId = auth.user?.id
 
-    return { type: 'positive', message: `Kick request sent for ${targetNick}.` }
+    if (myId === undefined) {
+      return { type: 'negative', message: 'User is not authenticated' }
+    }
+
+    socketStore.kickUser(myId, chat.currentChannelId, targetNick)
+
+    return { type: 'positive', message: ` ${targetNick} kicked.` }
   }
 
   return {

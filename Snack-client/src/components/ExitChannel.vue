@@ -16,7 +16,6 @@ const isModerator = computed(() => {
 
 async function confirmExit() {
   exitDialog.value = false;
-  emit('exitDialog:show', false)
 
   console.log("Leaving channel:", chat.currentChannelId)
   if (!chat.currentChannelId) return

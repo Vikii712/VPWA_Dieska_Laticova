@@ -215,7 +215,6 @@ export const useSocketStore = defineStore('socket', () => {
         await chatStore.loadChannelUsers(channelId)
       }
     })
-
     socket.value.on('userWasInvited', async ({channelId}) => {
       const auth = useAuthStore()
       const {useChatStore} = await import('stores/chat')
@@ -282,7 +281,7 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
   function leaveChannel(channelId: number, userId: number) {
-    socket.value?.emit('leaveChannel', { channelId , userId })
+    socket.value?.emit('leaveChannel', { channelId, userId })
   }
 
   function joinChannel(channelId: number) {
@@ -342,18 +341,18 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value?.emit('userRevoked', { channelId, targetNick })
   }
 
-  const kickUser = (channelId: number, targetNick: string) => {
-    console.log('kickUser called:', { channelId, targetNick, connected: connected.value })
-    socket.value?.emit('userKicked', { channelId, targetNick })
+  const kickUser = (myId: number, channelId: number, targetNick: string) => {
+    console.log('kickUser called:', { channelId, targetNick })
+    socket.value?.emit('userKicked', { myId, channelId, targetNick })
   }
 
-  async function inviteUser(channelId: number, nickName: string) {
+  async function inviteUser(channelId: number, nickName: string, isModerator: boolean) {
     return await new Promise((resolve, reject) => {
       if (!socket.value) return reject(new Error('Socket not connected'))
 
       socket.value.emit(
         'inviteUser',
-        { channelId, nickName },
+        { channelId, nickName, isModerator },
         (response: { status: string; message?: string }) => {
           if (response?.status === 'ok') return resolve(response)
           reject(new Error(response?.message || 'Failed to invite user'))

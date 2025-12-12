@@ -19,6 +19,12 @@ export default class ChannelUser extends BaseModel {
   @column()
   declare invited: boolean
 
+  @column()
+  declare member: boolean
+
+  @column()
+  declare ban: number
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

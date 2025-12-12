@@ -1,6 +1,6 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 
-export default class extends BaseSchema {
+export default class ChannelUsers extends BaseSchema {
   protected tableName = 'channel_users'
 
   async up() {
@@ -23,10 +23,11 @@ export default class extends BaseSchema {
         .inTable('channels')
         .onDelete('CASCADE')
 
-      table
-        .boolean('invited')
-        .defaultTo(false)
-        .notNullable()
+      table.boolean('invited').defaultTo(false).notNullable()
+      table.boolean('member').defaultTo(true).notNullable()
+      table.integer('ban').unsigned().defaultTo(0).notNullable()
+
+      table.check('ban >= 0 AND ban <= 3')
 
       table.unique(['user_id', 'channel_id'])
 

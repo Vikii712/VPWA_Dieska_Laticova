@@ -7,6 +7,7 @@ import User from "#models/user";
 import Message from "#models/message";
 import Channel from "#models/channel";
 import Mention from "#models/mention";
+import ChannelUser from "#models/channel_user";
 
 export let io: Server
 
@@ -63,7 +64,10 @@ app.ready(() => {
           .from('channel_users')
           .where('channel_id', channelId)
           .where('user_id', userId)
-          .update({ invited: false })
+          .update({
+            invited: 0,
+            member: 1
+          })
 
         callback?.({ status: 'ok', message: 'Invitation accepted.' })
 
@@ -169,7 +173,7 @@ app.ready(() => {
       }
     }
 
-    socket.on('inviteUser', async ({ channelId, nickName }, callback) => {
+    socket.on('inviteUser', async ({ channelId, nickName, isModerator }, callback) => {
       try {
         const targetUser = await User.query().where('nick', nickName).first()
         if (!targetUser) return callback({ status: 'error', message: 'User not found' })
@@ -181,13 +185,37 @@ app.ready(() => {
           .first()
 
         if (existing) {
-          return callback({ status: 'error', message: `${nickName} is already in the channel or invited.` })
+          if (existing.member) {
+            return callback({ status: 'error', message: `${nickName} is already a member of the channel.` })
+          }
+
+          if (existing.ban >= 3 && !isModerator) {
+            return callback({ status: 'error', message: `${nickName} is permanently banned and only moderator can invite them.` })
+          }
+
+          await db
+            .from('channel_users')
+            .where('id', existing.id)
+            .update({
+              invited: 1,
+              member: 0,
+              ban: isModerator ? 0 : existing.ban
+            })
+
+          const targetSockets = getUserSockets(targetUser.id)
+          for (const socketId of targetSockets) {
+            io.to(socketId).emit('userWasInvited', { channelId })
+          }
+
+          return callback({ status: 'ok', targetUserId: targetUser.id })
         }
 
         await db.table('channel_users').insert({
           channel_id: channelId,
           user_id: targetUser.id,
-          invited: true
+          invited: 1,
+          member: 0,
+          ban: 0
         })
 
         const targetSockets = getUserSockets(targetUser.id)
@@ -202,13 +230,8 @@ app.ready(() => {
       }
     })
 
-    socket.on('leaveChannel', async ({ channelId , userId}) => {
-      if (!userId || !channelId) {
-        console.log("No valid userId")
-        return
-      }
-      console.log("UserId:", userId)
-
+    socket.on('leaveChannel', async ({ channelId, userId }) => {
+      if (!userId || !channelId) return
 
       const userInChannel = await db
         .from('channel_users')
@@ -232,22 +255,20 @@ app.ready(() => {
         await Message.query().where('channel_id', channelId).delete()
         await db.from('channel_users').where('channel_id', channelId).delete()
         await channel.delete()
-
       } else {
+
         await db
           .from('channel_users')
           .where('channel_id', channelId)
           .where('user_id', userId)
-          .delete()
+          .update({ member: false })
 
         socket.leave(`channel-${channelId}`)
 
-        io.to(`channel-${channelId}`).emit('channelUsersUpdated', {
-          channelId,
-          userId,
-        })
+        io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId, userId })
       }
     })
+
 
 
     socket.on('joinChannel', ({ userId: joinUserId, channelId }: { userId: number; channelId: number }) => {
@@ -329,7 +350,7 @@ app.ready(() => {
     })
 
 
-    socket.on('userKicked', async ({ channelId, targetNick, moderatorId }) => {
+    socket.on('userKicked', async ({myId, channelId, targetNick, moderatorId }) => {
       try {
         const channel = await Channel.find(channelId)
         if (!channel) return console.warn('Channel not found:', channelId)
@@ -342,22 +363,36 @@ app.ready(() => {
         if (targetUser.id === channel.moderatorId) return console.warn('Cannot kick moderator')
         if (targetUser.id === moderatorId) return console.warn('Cannot kick yourself')
 
-        await db.from('channel_users')
+        const channelUser = await ChannelUser.query()
           .where('channel_id', channelId)
           .where('user_id', targetUser.id)
-          .delete()
+          .first()
 
-        io.to(`channel-${channelId}`).emit('userWasKicked', {
-          channelId,
-          userId: targetUser.id
-        })
+        if (channelUser) {
+          if (channelUser.ban >= 3) {
+            console.warn('User is permanently banned from the channel')
+            return
+          }
 
-        io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+          const newBanValue = myId === channel.moderatorId ? 3 : channelUser.ban + 1
 
+          await channelUser.merge({
+            ban: Math.min(newBanValue, 3),
+            member: false,
+          }).save()
+
+          io.to(`channel-${channelId}`).emit('userWasKicked', {
+            channelId,
+            userId: targetUser.id
+          })
+
+          io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId })
+        }
       } catch (err) {
         console.error('Error kicking user:', err)
       }
     })
+
 
 
     socket.on('statusChange', async (data: { status: string }) => {
