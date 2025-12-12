@@ -267,6 +267,7 @@ app.ready(() => {
 
 
     socket.on('typing', async (data) => {
+      console.log('SERVER: typing received:', data, 'from userId:', userId)
       try {
         const { channelId, isTyping } = data
         if (userId === undefined) return

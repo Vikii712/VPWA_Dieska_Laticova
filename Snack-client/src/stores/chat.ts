@@ -72,6 +72,8 @@ export const useChatStore = defineStore('chat', () => {
     return channelMeta.value[currentChannelId.value]?.isLoading ?? false
   })
 
+  const typingUsers = ref<Record<number, number[]>>({})
+
   function initChannelMeta(channelId: number) {
     if (!channelMeta.value[channelId]) {
       channelMeta.value[channelId] = {
@@ -381,6 +383,30 @@ export const useChatStore = defineStore('chat', () => {
     return await socketStore.acceptInvite(channelId)
   }
 
+  function setUserTyping(channelId: number, userId: number, isTyping: boolean) {
+    if (!typingUsers.value[channelId]) {
+      typingUsers.value[channelId] = []
+    }
+
+    const index = typingUsers.value[channelId].indexOf(userId)
+
+    if (isTyping && index === -1) {
+      typingUsers.value[channelId].push(userId)
+    } else if (!isTyping && index !== -1) {
+      typingUsers.value[channelId].splice(index, 1)
+    }
+  }
+
+  function isUserTyping(userId: number): boolean {
+    if (!currentChannelId.value) return false
+    return typingUsers.value[currentChannelId.value]?.includes(userId) ?? false
+  }
+
+  function getTypingUsers(): number[] {
+    if (!currentChannelId.value) return []
+    return typingUsers.value[currentChannelId.value] || []
+  }
+
 
   return {
     channels,
@@ -395,6 +421,7 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     hasMoreMessages,
     isLoadingMessages,
+    typingUsers,
 
     fetchChannels,
     loadChannel,
@@ -409,6 +436,9 @@ export const useChatStore = defineStore('chat', () => {
     clearAll,
     isUserMentioned,
     acceptInvite,
-    reloadCurrentChannel
+    reloadCurrentChannel,
+    setUserTyping,
+    isUserTyping,
+    getTypingUsers,
   }
 })

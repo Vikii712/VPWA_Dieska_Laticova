@@ -47,20 +47,24 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.getItem('notificationPreference') as 'all' | 'mentioned' | 'none' || 'all'
   )
 
-  function authenticate(result: AuthResponse) {
+  async function authenticate(result: AuthResponse) {
     token.value = result.token
     user.value = result.user
     localStorage.setItem('token', result.token)
+
+    const {useSocketStore} = await import('stores/socketStore')
+    const socketStore = useSocketStore()
+    socketStore.init(result.token)
   }
 
   async function login(payload: LoginPayload) {
     const result = await api<AuthResponse>('POST', '/login', payload)
-    authenticate(result)
+    await authenticate(result)
   }
 
   async function register(payload: RegisterPayload) {
     const result = await api<AuthResponse>('POST', '/register', payload)
-    authenticate(result)
+    await authenticate(result)
   }
 
   async function logout() {
@@ -77,6 +81,12 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = result.user
         if (!user.value.activity_status) {
           await updateStatus('active')
+        }
+
+        const {useSocketStore} = await import('stores/socketStore')
+        const socketStore = useSocketStore()
+        if (token.value && !socketStore.connected) {
+          socketStore.init(token.value)
         }
       }
     } catch (error) {

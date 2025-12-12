@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { io } from 'socket.io-client'
 import type { Socket } from 'socket.io-client'
 import {nextTick, ref} from 'vue'
-import type { Message } from 'stores/chat'
+import type {Message} from "stores/chat";
+import {useChatStore} from 'stores/chat'
 import { Notify } from 'quasar'
 import { useAuthStore } from 'stores/auth'
 
@@ -107,7 +108,6 @@ export const useSocketStore = defineStore('socket', () => {
         })
       }
 
-      // Push browser notification
       if (window.Notification && document.hidden) {
         if (Notification.permission === 'granted') {
           new Notification(
@@ -127,14 +127,10 @@ export const useSocketStore = defineStore('socket', () => {
       }
     })
 
-
-    socket.value.on('userTyping', (data: { channelId: number; userId: number; nick: string }) => {
-      const authStore = useAuthStore()
-      console.log('User typing:', data)
-
-      if (!authStore.isOnline) {
-        return
-      }
+    socket.value.on('userTyping', (data: { channelId: number; userId: number; nick: string; isTyping: boolean }) => {
+      console.log('userTyping received:', data)
+      const chat = useChatStore()
+      chat.setUserTyping(data.channelId, data.userId, data.isTyping)
     })
 
     socket.value.on('channelUsersUpdated', async (data: { channelId: number }) => {
@@ -300,6 +296,18 @@ export const useSocketStore = defineStore('socket', () => {
     console.log('Emitting joinChannel', { userId, channelId })
   }
 
+  function emitTyping(channelId: number, isTyping: boolean) {
+    console.log('emitTyping called:', { channelId, isTyping, connected: socket.value?.connected })
+
+    if (!socket.value || !socket.value.connected) {
+      console.warn('Socket not connected!')
+      return
+    }
+
+    socket.value.emit('typing', { channelId, isTyping })
+    console.log('typing event emitted')
+  }
+
   const sendMessage = (channelId: number, content: string) => {
     const auth = useAuthStore()
 
@@ -413,5 +421,6 @@ export const useSocketStore = defineStore('socket', () => {
     init,
     inviteUser,
     acceptInvite,
+    emitTyping
   }
 })

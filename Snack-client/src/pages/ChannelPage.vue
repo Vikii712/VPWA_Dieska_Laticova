@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import ChatComponent from "components/ChatComponent.vue";
 import CancelDialog from "components/cancelDialog.vue"
-import { ref, computed } from "vue"
+import {ref, computed, watch, onBeforeUnmount} from "vue"
 import { useChatStore } from "stores/chat"
 import { useCommandStore } from "stores/commandStore"
 import {useQuasar} from "quasar";
 import {useAuthStore} from "stores/auth";
+import {useSocketStore} from "stores/socketStore";
 
 const $q = useQuasar()
 const message = ref('')
 const chat = useChatStore()
+const socketStore = useSocketStore()
 const isSending = ref(false)
 const props = defineProps<{ mini: boolean }>()
 const commandStore = useCommandStore()
@@ -21,9 +23,57 @@ const leftOffset = computed(() =>
 
 const showCancelDialog = ref(false)
 
+let typingTimeout: ReturnType<typeof setTimeout> | null = null
+let isTyping = false
+
+function onTyping(value: string | number | null) {
+  if (!chat.currentChannelId) return
+
+  if (value && String(value).trim()) {
+    if (!isTyping) {
+      isTyping = true
+      console.log('Emitting typing TRUE')
+      socketStore.emitTyping(chat.currentChannelId, true)
+    }
+
+    if (typingTimeout) clearTimeout(typingTimeout)
+    typingTimeout = setTimeout(() => {
+      isTyping = false
+      socketStore.emitTyping(chat.currentChannelId!, false)
+    }, 1000)
+  } else {
+    if (isTyping) {
+      isTyping = false
+      socketStore.emitTyping(chat.currentChannelId, false)
+    }
+    if (typingTimeout) clearTimeout(typingTimeout)
+  }
+}
+
+watch(() => chat.currentChannelId!, () => {
+  if (isTyping && chat.currentChannelId) {
+    isTyping = false
+    socketStore.emitTyping(chat.currentChannelId, false)
+  }
+  if (typingTimeout) clearTimeout(typingTimeout)
+})
+
+onBeforeUnmount(() => {
+  if (isTyping && chat.currentChannelId) {
+    socketStore.emitTyping(chat.currentChannelId, false)
+  }
+  if (typingTimeout) clearTimeout(typingTimeout)
+})
+
 async function sendMessage() {
   const text = message.value.trim()
   if (!text || isSending.value) return
+
+  if (isTyping && chat.currentChannelId) {
+    isTyping = false
+    socketStore.emitTyping(chat.currentChannelId, false)
+  }
+  if (typingTimeout) clearTimeout(typingTimeout)
 
   if (text.startsWith('/')) {
     const result = await commandStore.processCommand(text)
@@ -83,6 +133,7 @@ async function handleKeydown(event: KeyboardEvent) {
         autogrow
         dense
         v-model="message"
+        @update:model-value="onTyping"
         outlined
         color="black"
         bg-color="grey-9"
