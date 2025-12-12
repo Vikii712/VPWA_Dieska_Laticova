@@ -62,7 +62,7 @@ function getStatusLabel(status: string) {
           round
           dense
           flat
-          :icon="showOnlyTyping ? 'edit' : 'edit_off'"
+          :icon="showOnlyTyping ? 'edit_off' : 'edit'"
           :color="showOnlyTyping ? 'amber' : 'white'"
           class="q-mr-sm"
           @click="showOnlyTyping = !showOnlyTyping"
@@ -83,42 +83,70 @@ function getStatusLabel(status: string) {
 
     <q-scroll-area class="col text-white">
       <q-list padding>
-        <q-item
-          v-for="user in displayedUsers"
-          :key="user.id"
-          clickable
-          class="q-pl-md q-pr-none"
-        >
-          <q-avatar>
-            <q-badge
-              floating
-              class="q-ml-lg"
-              :color="getStatusColor(user.activity_status || 'offline')"
-            >
-              {{ getStatusLabel(user.activity_status || 'offline') }}
-            </q-badge>
-            <img alt="" src="../assets/images/user_icon.svg" width="40" />
-          </q-avatar>
-
-          <q-item-section class="q-pl-md text-white">
-            {{ user.nick }}
-          </q-item-section>
-
-          <q-badge
+        <template v-for="user in displayedUsers" :key="user.id">
+          <q-expansion-item
             v-if="chat.isUserTyping(user.id)"
-            color="orange"
-            class="self-center q-ma-sm"
+            class="text-white"
+            expand-icon-class="text-white"
           >
-            typing...
-          </q-badge>
+            <template v-slot:header>
+              <q-item-section avatar>
+                <q-avatar>
+                  <q-badge
+                    floating
+                    :color="'orange'"
+                  >
+                    typing
+                  </q-badge>
+                  <img alt="" src="../assets/images/user_icon.svg" width="40" />
+                </q-avatar>
+              </q-item-section>
 
-          <q-badge
-            v-if="user.id === chat.moderatorId"
-            class="self-center q-ma-sm text-white"
+              <q-item-section class="text-white">
+                {{ user.nick }}
+              </q-item-section>
+
+              <q-badge
+                v-if="user.id === chat.moderatorId"
+                class="self-center q-ma-sm text-white"
+              >
+                M
+              </q-badge>
+            </template>
+            <q-card class="q-ma-none bg-purple-10">
+              <q-card-section class="text-grey-4 text-body2 bg-transparent" style="word-wrap: break-word; white-space: pre-wrap; overflow-wrap: anywhere;">
+                {{ chat.getUserTypingContent(user.id) || 'Empty...' }}
+              </q-card-section>
+            </q-card>
+          </q-expansion-item>
+          <q-item
+            v-else
+            clickable
+            class="q-pr-none"
           >
-            M
-          </q-badge>
-        </q-item>
+            <q-avatar size="40px">
+              <q-badge
+                floating
+                class="q-ml-lg"
+                :color="getStatusColor(user.activity_status || 'offline')"
+              >
+                {{ getStatusLabel(user.activity_status || 'offline') }}
+              </q-badge>
+              <img alt="" src="../assets/images/user_icon.svg" width="40" />
+            </q-avatar>
+
+            <q-item-section class="q-pl-md text-white">
+              {{ user.nick }}
+            </q-item-section>
+
+            <q-badge
+              v-if="user.id === chat.moderatorId"
+              class="self-center q-ma-sm text-white"
+            >
+              M
+            </q-badge>
+          </q-item>
+        </template>
 
         <q-item v-if="showOnlyTyping && displayedUsers.length === 0">
           <q-item-section class="text-center text-grey-5">

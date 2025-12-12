@@ -72,7 +72,7 @@ export const useChatStore = defineStore('chat', () => {
     return channelMeta.value[currentChannelId.value]?.isLoading ?? false
   })
 
-  const typingUsers = ref<Record<number, number[]>>({})
+  const typingUsers = ref<Record<number, {userId: number; content: string}[]>>({})
 
   function initChannelMeta(channelId: number) {
     if (!channelMeta.value[channelId]) {
@@ -383,28 +383,44 @@ export const useChatStore = defineStore('chat', () => {
     return await socketStore.acceptInvite(channelId)
   }
 
-  function setUserTyping(channelId: number, userId: number, isTyping: boolean) {
+  function setUserTyping(channelId: number, userId: number, isTyping: boolean, content: string = '') {
+    console.log('setUserTyping:', { channelId, userId, isTyping })
     if (!typingUsers.value[channelId]) {
       typingUsers.value[channelId] = []
     }
 
-    const index = typingUsers.value[channelId].indexOf(userId)
+    const users = typingUsers.value[channelId]
+    const index = users.findIndex(u => u.userId === userId)
 
-    if (isTyping && index === -1) {
-      typingUsers.value[channelId].push(userId)
-    } else if (!isTyping && index !== -1) {
-      typingUsers.value[channelId].splice(index, 1)
+    if (isTyping) {
+      if (index === -1) {
+        users.push({ userId, content })
+      } else {
+        const user = users[index]
+        if (user) {
+          user.content = content
+        }
+      }
+    } else if (index !== -1) {
+      users.splice(index, 1)
     }
   }
 
   function isUserTyping(userId: number): boolean {
     if (!currentChannelId.value) return false
-    return typingUsers.value[currentChannelId.value]?.includes(userId) ?? false
+    return typingUsers.value[currentChannelId.value]?.some(u => u.userId === userId) ?? false
   }
 
-  function getTypingUsers(): number[] {
-    if (!currentChannelId.value) return []
-    return typingUsers.value[currentChannelId.value] || []
+  function getTypingUsers(userId: number): string {
+    if (!currentChannelId.value) return ''
+    const user = typingUsers.value[currentChannelId.value]?.find(u => u.userId === userId)
+    return user?.content ?? ''
+  }
+
+  function getUserTypingContent(userId: number): string {
+    if (!currentChannelId.value) return ''
+    const user = typingUsers.value[currentChannelId.value]?.find(u => u.userId === userId)
+    return user?.content ?? ''
   }
 
 
@@ -440,5 +456,6 @@ export const useChatStore = defineStore('chat', () => {
     setUserTyping,
     isUserTyping,
     getTypingUsers,
+    getUserTypingContent
   }
 })

@@ -23,46 +23,38 @@ const leftOffset = computed(() =>
 
 const showCancelDialog = ref(false)
 
-let typingTimeout: ReturnType<typeof setTimeout> | null = null
 let isTyping = false
 
 function onTyping(value: string | number | null) {
   if (!chat.currentChannelId) return
+  const textValue = value ? String(value).trim() : ''
+  const hasText = textValue.trim()
 
-  if (value && String(value).trim()) {
-    if (!isTyping) {
-      isTyping = true
-      console.log('Emitting typing TRUE')
-      socketStore.emitTyping(chat.currentChannelId, true)
-    }
-
-    if (typingTimeout) clearTimeout(typingTimeout)
-    typingTimeout = setTimeout(() => {
-      isTyping = false
-      socketStore.emitTyping(chat.currentChannelId!, false)
-    }, 1000)
-  } else {
-    if (isTyping) {
-      isTyping = false
-      socketStore.emitTyping(chat.currentChannelId, false)
-    }
-    if (typingTimeout) clearTimeout(typingTimeout)
+  if (hasText) {
+    isTyping = true
+    socketStore.emitTyping(chat.currentChannelId, true, textValue)
+  } else if (!hasText && isTyping) {
+    isTyping = false
+    socketStore.emitTyping(chat.currentChannelId, false, '')
   }
 }
 
-watch(() => chat.currentChannelId!, () => {
-  if (isTyping && chat.currentChannelId) {
-    isTyping = false
-    socketStore.emitTyping(chat.currentChannelId, false)
+watch(() => chat.currentChannelId, (newId, oldId) => {
+  if (isTyping && oldId) {
+    socketStore.emitTyping(oldId, false)
   }
-  if (typingTimeout) clearTimeout(typingTimeout)
+  isTyping = false
+
+  if ( newId && message.value.trim()) {
+    isTyping = true
+    socketStore.emitTyping(newId, true)
+  }
 })
 
 onBeforeUnmount(() => {
   if (isTyping && chat.currentChannelId) {
     socketStore.emitTyping(chat.currentChannelId, false)
   }
-  if (typingTimeout) clearTimeout(typingTimeout)
 })
 
 async function sendMessage() {
@@ -73,7 +65,6 @@ async function sendMessage() {
     isTyping = false
     socketStore.emitTyping(chat.currentChannelId, false)
   }
-  if (typingTimeout) clearTimeout(typingTimeout)
 
   if (text.startsWith('/')) {
     const result = await commandStore.processCommand(text)

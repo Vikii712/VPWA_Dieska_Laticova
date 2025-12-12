@@ -269,7 +269,7 @@ app.ready(() => {
     socket.on('typing', async (data) => {
       console.log('SERVER: typing received:', data, 'from userId:', userId)
       try {
-        const { channelId, isTyping } = data
+        const { channelId, isTyping, content } = data
         if (userId === undefined) return
 
         const usersInChannel = await db
@@ -287,6 +287,7 @@ app.ready(() => {
               userId,
               nick: user?.nick,
               isTyping,
+              content
             })
           }
         }
