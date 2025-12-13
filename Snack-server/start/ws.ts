@@ -269,6 +269,31 @@ app.ready(() => {
       }
     })
 
+    socket.on('declineInvite', async ({ channelId, userId }) => {
+      if (!userId || !channelId) return
+
+      const userInChannel = await db
+        .from('channel_users')
+        .where('channel_id', channelId)
+        .where('user_id', userId)
+        .first()
+
+      if (!userInChannel) return
+
+      await db
+        .from('channel_users')
+        .where('channel_id', channelId)
+        .where('user_id', userId)
+        .update({
+          invited: false,
+          member: false
+        })
+
+      socket.emit('inviteDeclined', { channelId })
+
+      io.to(`channel-${channelId}`).emit('channelUsersUpdated', { channelId, userId })
+    })
+
 
 
     socket.on('joinChannel', ({ userId: joinUserId, channelId }: { userId: number; channelId: number }) => {

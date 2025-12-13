@@ -284,6 +284,10 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value?.emit('leaveChannel', { channelId, userId })
   }
 
+  function declineInvite(channelId: number, userId: number) {
+    socket.value?.emit('declineInvite', { channelId, userId })
+  }
+
   function joinChannel(channelId: number) {
     const auth = useAuthStore()
     const userId = auth.user?.id
@@ -415,6 +419,7 @@ export const useSocketStore = defineStore('socket', () => {
     disconnect,
     joinChannel,
     leaveChannel,
+    declineInvite,
     sendMessage,
     revokeUser,
     kickUser,

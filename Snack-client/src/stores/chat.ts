@@ -252,6 +252,22 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function declineInvite(channelId: number) {
+    if (!channelId) return
+    const socketStore = useSocketStore()
+    const auth = useAuthStore()
+
+    const userId = auth.user?.id
+    if (!userId) return
+
+    try {
+      socketStore.declineInvite(channelId, userId)
+    } catch (err) {
+      console.error('Failed to decline invite:', err)
+      throw err
+    }
+  }
+
   async function joinOrCreateChannel(name: string, type: 'public' | 'private' = 'public') {
     try {
       const result = await api<{
@@ -442,6 +458,7 @@ export const useChatStore = defineStore('chat', () => {
     loadChannelUsers,
     createChannel,
     joinOrCreateChannel,
+    declineInvite,
     leaveChannel,
     sendMessage,
     addMessage,

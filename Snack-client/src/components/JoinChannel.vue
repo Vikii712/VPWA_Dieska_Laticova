@@ -16,7 +16,7 @@ async function confirmJoin() {
   joinDialog.value = false;
 
   try {
-    await chat.acceptInvite(props.channelId)  // Toto už emitne socket event
+    await chat.acceptInvite(props.channelId)
     await chat.loadChannel(props.channelId)
 
     $q.notify({
@@ -30,6 +30,31 @@ async function confirmJoin() {
     $q.notify({
       type: 'negative',
       message: 'Failed to join channel',
+      position: 'top',
+      timeout: 2000
+    })
+  }
+}
+
+function declineInvite() {
+  joinDialog.value = false;
+
+  try {
+    chat.declineInvite(props.channelId)
+
+    chat.channels = chat.channels.filter(c => c.id !== props.channelId)
+
+    $q.notify({
+      type: 'info',
+      message: `Invitation to ${props.channelName} declined`,
+      position: 'top',
+      timeout: 2000
+    })
+  } catch (error) {
+    console.error('Failed to decline invite:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to decline invitation',
       position: 'top',
       timeout: 2000
     })
@@ -57,8 +82,8 @@ async function confirmJoin() {
         Do you really want to join the channel {{ channelName }}?
       </q-card-section>
       <q-card-actions align="center">
-        <q-btn label="Yes" color="purple" @click="confirmJoin"></q-btn>
-        <q-btn outline label="No" color="purple" v-close-popup />
+        <q-btn label="Yes" color="purple" @click="confirmJoin" />
+        <q-btn outline label="No" color="negative" @click="declineInvite" />
       </q-card-actions>
     </q-card>
   </q-dialog>
