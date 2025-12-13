@@ -52,7 +52,7 @@ function getStatusLabel(status: string) {
     elevated
     class="bg-deep-purple-7 column"
   >
-    <q-item class="text-white text-bold justify-center q-pt-md">
+    <q-item class="text-white text-bold text-body1 justify-center q-pt-md">
       Member List
     </q-item>
 

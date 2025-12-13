@@ -130,6 +130,7 @@ async function handleKeydown(event: KeyboardEvent) {
         bg-color="grey-9"
         class="text-white"
         input-class="q-pl-lg"
+        maxlength="1000"
         :input-style="{ maxHeight: '200px', color: 'white', scrollbarWidth: 'none'}"
         @keydown="handleKeydown"
         :disable="isSending || !auth.isOnline"

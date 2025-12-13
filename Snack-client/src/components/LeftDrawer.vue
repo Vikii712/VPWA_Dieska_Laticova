@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import AddChannel from "components/AddChannel.vue";
 import ExitChannel from "components/ExitChannel.vue";
-import JoinChannel from "components/JoinChannel.vue";  // Import
+import JoinChannel from "components/JoinChannel.vue";
 import { useChatStore } from "stores/chat";
-import { computed, onMounted } from "vue";
+import {computed, onMounted, ref} from "vue";
 
 const chat = useChatStore()
 
 const props = defineProps<{mini: boolean}>()
+const text = ref<string>("")
 
 onMounted(async () => {
   await chat.fetchChannels()
@@ -23,8 +24,20 @@ async function selectChannel(channelId: number) {
   await chat.loadChannel(channelId)
 }
 
+const filteredChannels = computed(() => {
+  const searchTerm = text.value.toLowerCase().trim()
+
+  if (!searchTerm) {
+    return chat.channels
+  }
+
+  return chat.channels.filter(channel =>
+    channel.name.toLowerCase().includes(searchTerm)
+  )
+})
+
 const sortedChannels = computed(() => {
-  return [...chat.channels].sort((a, b) => {
+  return [...filteredChannels.value].sort((a, b) => {
     if (a.invited && !b.invited) return -1
     if (!a.invited && b.invited) return 1
 
@@ -47,12 +60,23 @@ const sortedChannels = computed(() => {
     class="bg-deep-purple-7 column"
     :breakpoint="0"
   >
-    <q-item :class="{'bg-purple-10': !props.mini}">
+    <q-item :class="{'bg-deep-purple-7': !props.mini}">
       <q-item-section avatar />
       <q-item-section class="text-white text-bold text-body1">
         Channel list
       </q-item-section>
     </q-item>
+
+    <div v-if="!props.mini">
+      <q-toolbar class="text-white rounded-borders q-px-lg">
+        <q-input dark dense standout v-model="text" class="col">
+          <template v-slot:append>
+            <q-icon v-if="text === ''" name="search" />
+            <q-icon v-else name="clear" class="cursor-pointer" @click="text = ''" />
+          </template>
+        </q-input>
+      </q-toolbar>
+    </div>
 
     <q-scroll-area class="col text-white">
       <q-list padding>

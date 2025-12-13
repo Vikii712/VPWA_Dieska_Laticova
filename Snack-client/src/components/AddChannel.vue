@@ -70,6 +70,7 @@
           dense
           autofocus
           @keydown.enter.prevent
+          @keydown.space.prevent
           :input-style="{maxHeight: '42px'}"
         />
 
