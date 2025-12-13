@@ -55,6 +55,10 @@ export const useAuthStore = defineStore('auth', () => {
     const {useSocketStore} = await import('stores/socketStore')
     const socketStore = useSocketStore()
     socketStore.init(result.token)
+
+    if (!user.value.activity_status || user.value.activity_status === 'offline') {
+      await updateStatus('active')
+    }
   }
 
   async function login(payload: LoginPayload) {
@@ -85,9 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
 
         const {useSocketStore} = await import('stores/socketStore')
         const socketStore = useSocketStore()
-        if (token.value && !socketStore.connected) {
-          socketStore.init(token.value)
-        }
+        socketStore.init(token.value || undefined)
       }
     } catch (error) {
       console.error('Failed to fetch user:', error)
@@ -109,25 +111,33 @@ export const useAuthStore = defineStore('auth', () => {
       const { useSocketStore } = await import('stores/socketStore')
       const socketStore = useSocketStore()
 
-      if (socketStore.socket) {
-        console.log('Emitting statusChange')
-        socketStore.socket.emit('statusChange', { status })
-      } else {
-        console.warn('Socket is not connected')
+      if (status === 'offline') {
+        console.log('Going offline, disconnecting socket...')
+        socketStore.disconnect()
       }
+      else if (oldStatus === 'offline' && status !== 'offline') {
+        console.log('Coming back online, reconnecting socket...')
+        socketStore.init(token.value || undefined)
 
-      if (oldStatus === 'offline' && status !== 'offline') {
-        console.log('Coming back online, reloading data...')
-        const {useChatStore} = await import('stores/chat')
+        await new Promise<void>((resolve) => {
+          const checkConnection = setInterval(() => {
+            if (socketStore.connected) {
+              clearInterval(checkConnection)
+              resolve()
+            }
+          }, 100)
+          setTimeout(() => {
+            clearInterval(checkConnection)
+            resolve()
+          }, 5000)
+        })
+
+        const { useChatStore } = await import('stores/chat')
         const chatStore = useChatStore()
 
         const currentChannelId = chatStore.currentChannelId
 
         await chatStore.fetchChannels()
-
-        if (currentChannelId) {
-          await chatStore.reloadCurrentChannel()
-        }
 
         if (currentChannelId) {
           console.log(`Reloading channel ${currentChannelId}`)
@@ -140,7 +150,12 @@ export const useAuthStore = defineStore('auth', () => {
             }
           }
           await chatStore.loadChannel(currentChannelId)
+          socketStore.joinChannel(currentChannelId)
         }
+      }
+      else if (socketStore.socket?.connected) {
+        console.log('Emitting statusChange')
+        socketStore.socket.emit('statusChange', { status })
       }
 
       console.log('Status updated successfully')

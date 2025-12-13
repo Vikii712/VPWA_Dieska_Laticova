@@ -28,15 +28,30 @@ app.ready(() => {
     const userId = socket.data.userId
     console.log(`User ${userId} connected: ${socket.id}`)
 
-    if (userId !== undefined) {
-      if (!userSockets[userId]) userSockets[userId] = []
-      if (!userSockets[userId].includes(socket.id)) {
-        userSockets[userId].push(socket.id)
-      }
-    } else {
+    if (userId === undefined) {
       console.warn(`Socket ${socket.id} connected without userId`)
+      socket.disconnect(true)
       return
     }
+
+    if (userSockets[userId]) {
+      const oldSockets = [...userSockets[userId]]
+      for (const oldSocketId of oldSockets) {
+        if (oldSocketId !== socket.id) {
+          const oldSocket = io.sockets.sockets.get(oldSocketId)
+          if (oldSocket && !oldSocket.connected) {
+            userSockets[userId] = userSockets[userId].filter(id => id !== oldSocketId)
+          }
+        }
+      }
+    }
+
+    if (!userSockets[userId]) userSockets[userId] = []
+    if (!userSockets[userId].includes(socket.id)) {
+      userSockets[userId].push(socket.id)
+    }
+
+    console.log(`User ${userId} now has ${userSockets[userId].length} active sockets`)
 
     socket.on('acceptInvite', async({channelId}, callback)=>{
       try {
@@ -51,6 +66,7 @@ app.ready(() => {
           .where('user_id', userId)
           .first()
 
+        console.log('channelUser found:', channelUser, 'channelid:', channelId, 'userid:', userId)
 
         if (!channelUser) {
           return callback?.({ status: 'error', message: 'Invitation not found.' })
@@ -313,7 +329,7 @@ app.ready(() => {
 
 
     socket.on('typing', async (data) => {
-      console.log('SERVER: typing received:', data, 'from userId:', userId)
+      //console.log('SERVER: typing received:', data, 'from userId:', userId)
       try {
         const { channelId, isTyping, content } = data
         if (userId === undefined) return

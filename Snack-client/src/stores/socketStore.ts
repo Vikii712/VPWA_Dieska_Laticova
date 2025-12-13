@@ -10,27 +10,7 @@ import { useAuthStore } from 'stores/auth'
 export const useSocketStore = defineStore('socket', () => {
   const socket = ref<Socket | null>(null)
   const connected = ref(false)
-
-  function connect(token: string) {
-    if (socket.value?.connected) return
-
-    const auth = useAuthStore()
-    const userId = auth.user?.id
-
-    socket.value = io('http://localhost:3333', {
-      auth: {
-        token,
-        userId
-      },
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    })
-
-    setupListeners()
-  }
+  const isInitializing = ref(false)
 
   function setupListeners() {
     if (!socket.value) return
@@ -38,23 +18,56 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value.on('connect', () => {
       connected.value = true
       console.log('Socket connected')
+
+      const chatStore = useChatStore()
+      if (chatStore.currentChannelId) {
+        console.log('Rejoining channel after reconnect:', chatStore.currentChannelId)
+        joinChannel(chatStore.currentChannelId)
+      }
     })
 
-    socket.value.on('disconnect', () => {
+    socket.value.on('disconnect', (reason) => {
       connected.value = false
-      console.log('Socket disconnected')
+      console.log('Socket disconnected, reason:', reason)
+
+      if (reason === 'io server disconnect') {
+        console.log('Server disconnected, attempting to disconnect...')
+        socket.value?.connect()
+      }
     })
 
-    socket.value.on('connect_error', (error) => {
-      console.error('Socket connection error:', error)
-      const authStore = useAuthStore()
+    socket.value.on('reconnect', (attemptNumber) => {
+      console.log('Socket reconnected after', attemptNumber, 'attempts')
+    })
 
+    socket.value.on('reconnect_attempt', (attemptNumber) => {
+      console.log('Reconnection attempt:', attemptNumber)
+    })
+
+    socket.value.on('reconnect_error', (error) => {
+      console.error('Reconnection error:', error)
+    })
+
+    socket.value.on('reconnect_failed', () => {
+      console.error('Reconnection failed after all attempts')
+      const authStore = useAuthStore()
       if (authStore.isOnline) {
         Notify.create({
           type: 'negative',
-          message: 'Connection error. Retrying...',
+          message: 'Connection lost. Please refresh the page.',
           position: 'top',
+          timeout: 0,
+          actions: [
+            { label: 'Refresh', color: 'white', handler: () => window.location.reload() }
+          ]
         })
+      }
+    })
+
+    socket.value.on('connect_error', (error) => {
+      console.error('Socket connection error:', error.message)
+      if (error.message.includes('auth') || error.message.includes('token')) {
+        console.log('Auth error, might need to re-login')
       }
     })
 
@@ -179,10 +192,6 @@ export const useSocketStore = defineStore('socket', () => {
       }
     })
 
-    socket.value.on('disconnect', (reason) => {
-      console.warn('Socket disconnected:', reason)
-    })
-
     socket.value.on('userWasRevoked', async ({channelId, userId}) => {
       const auth = useAuthStore()
       const {useChatStore} = await import('stores/chat')
@@ -272,12 +281,7 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
   function disconnect() {
-    if (socket.value) {
-      socket.value.removeAllListeners()
-      socket.value.disconnect()
-      socket.value = null
-      connected.value = false
-    }
+    cleanup()
   }
 
   function leaveChannel(channelId: number, userId: number) {
@@ -295,24 +299,22 @@ export const useSocketStore = defineStore('socket', () => {
       console.warn('No user ID available for joinChannel!')
       return
     }
-    socket.value?.emit('joinChannel', { userId, channelId })
-    console.log('Emitting joinChannel', { userId, channelId })
+    if (!socket.value?.connected) {
+      console.warn('Socket not connected, cannot join channel')
+      return
+    }
+    socket.value.emit('joinChannel', { userId, channelId })
   }
 
   function emitTyping(channelId: number, isTyping: boolean, content: string = '') {
-    console.log('emitTyping called:', { channelId, isTyping, connected: socket.value?.connected })
-    console.trace('Called from:')
-
-    if (!socket.value || !socket.value.connected) {
-      console.warn('Socket not connected!')
+    if (!socket.value?.connected) {
+      console.warn('Socket not connected, cannot emit typing')
       return
     }
-
     socket.value.emit('typing', { channelId, isTyping, content })
-    console.log('typing event emitted')
   }
 
-  const sendMessage = (channelId: number, content: string) => {
+  function sendMessage(channelId: number, content: string) {
     const auth = useAuthStore()
 
     if (!auth.isOnline) {
@@ -324,35 +326,37 @@ export const useSocketStore = defineStore('socket', () => {
       return
     }
 
-    if (!socket.value || !socket.value.connected) {
-      console.warn('Socket not connected, dropping message.')
+    if (!socket.value?.connected) {
+      Notify.create({
+        type: 'warning',
+        message: 'Connection lost. Please wait...',
+        position: 'top',
+      })
       return
     }
 
-    console.log('Sending message through socket:', { channelId, content })
-
     socket.value.emit('sendMessage', {
       channelId,
-      message: {
-        content
-      }
+      message: { content }
     })
   }
 
 
   const revokeUser = (channelId: number, targetNick: string) => {
-    console.log('revokeUser called:', { channelId, targetNick, connected: connected.value })
+    //console.log('revokeUser called:', { channelId, targetNick, connected: connected.value })
     socket.value?.emit('userRevoked', { channelId, targetNick })
   }
 
   const kickUser = (myId: number, channelId: number, targetNick: string) => {
-    console.log('kickUser called:', { channelId, targetNick })
+    //console.log('kickUser called:', { channelId, targetNick })
     socket.value?.emit('userKicked', { myId, channelId, targetNick })
   }
 
   async function inviteUser(channelId: number, nickName: string, isModerator: boolean) {
-    return await new Promise((resolve, reject) => {
-      if (!socket.value) return reject(new Error('Socket not connected'))
+    return new Promise((resolve, reject) => {
+      if (!socket.value?.connected) {
+        return reject(new Error('Socket not connected'))
+      }
 
       socket.value.emit(
         'inviteUser',
@@ -366,9 +370,11 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
   async function acceptInvite(channelId: number): Promise<boolean> {
-    if (!socket.value) throw new Error('Socket not connected')
+    if (!socket.value?.connected) {
+      throw new Error('Socket not connected')
+    }
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       socket.value!.emit(
         'acceptInvite',
         { channelId },
@@ -376,7 +382,6 @@ export const useSocketStore = defineStore('socket', () => {
           if (response?.status === 'ok') {
             const { useChatStore } = await import('stores/chat')
             const chatStore = useChatStore()
-
             await chatStore.fetchChannels()
             resolve(true)
           } else {
@@ -388,34 +393,60 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
   function init(token?: string) {
-    if (socket.value?.connected) return
-    const _token = token || useAuthStore().token
-    const auth = useAuthStore()
-    const userId = auth.user?.id
-
-    if (!_token) {
-      console.warn('No token for socket initialization!')
+    if (isInitializing.value) {
+      console.log("Socket initialization already under progess")
       return
     }
+
+    const auth = useAuthStore()
+    const _token = token || auth.token
+
+    if(!_token) {
+      console.warn("No token for socket initializaiton!")
+      return
+    }
+
+    if (socket.value) {
+      if (socket.value.connected) {
+        console.log("Socket already connected!")
+        return
+      }
+      console.log("Cleaning up existing disconnected socket")
+      cleanup()
+    }
+
+    isInitializing.value = true
+
+    console.log("Initializing new socket connection")
 
     socket.value = io('http://localhost:3333', {
       auth: {
         token: _token,
-        userId
       },
       transports: ['websocket'],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
+      timeout: 20000,
     })
+
     setupListeners()
+    isInitializing.value = false
+  }
+
+  function cleanup() {
+    if (socket.value) {
+      socket.value.removeAllListeners()
+      socket.value.disconnect()
+      socket.value = null
+      connected.value = false
+    }
   }
 
   return {
     socket,
     connected,
-    connect,
     disconnect,
     joinChannel,
     leaveChannel,
@@ -426,6 +457,6 @@ export const useSocketStore = defineStore('socket', () => {
     init,
     inviteUser,
     acceptInvite,
-    emitTyping
+    emitTyping,
   }
 })

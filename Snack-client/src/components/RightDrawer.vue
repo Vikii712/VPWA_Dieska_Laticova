@@ -3,14 +3,18 @@ import {ref, computed, watch} from "vue";
 import {useAuthStore} from "stores/auth";
 import {useRouter} from "vue-router";
 import { onMounted } from 'vue'
+import {useQuasar} from "quasar";
 
 const auth = useAuthStore();
 const router = useRouter();
+const $q = useQuasar();
 
 const state = ref<string>('offline')
 const notifType = ref<'all' | 'mentioned' | 'none'>('all')
 const props = defineProps<{modelValue: boolean}>()
 const emit = defineEmits<{(e: "update:modelValue", value: boolean): void}>()
+
+const isInitialized = ref<boolean>(false)
 
 const activityBorder = computed(() => {
   let color = 'pink-10'
@@ -26,12 +30,66 @@ const activityBorder = computed(() => {
   }
 })
 
+const statusLabels: Record<string, string> = {
+  active: 'Online',
+  away: 'Do Not Disturb',
+  offline: 'Offline'
+}
+
+const statusColors: Record<string, string> = {
+  active: 'teal',
+  away: 'blue-9',
+  offline: 'pink-9'
+}
+
+const statusIcons: Record<string, string> = {
+  active: 'wifi',
+  away: 'do_not_disturb',
+  offline: 'wifi_off'
+}
+
+const notifLabels: Record<string, string> = {
+  all: 'All',
+  mentioned: '@mentions only',
+  none: 'Off'
+}
+
+const notifColors: Record<string, string> = {
+  all: 'teal-7',
+  mentioned: 'blue-7',
+  none: 'pink-7'
+}
+
+const notifIcons: Record<string, string> = {
+  all: 'notifications_active',
+  mentioned: 'alternate_email',
+  none: 'notifications_off'
+}
+
 watch(state, async (newStatus) => {
+  if (!isInitialized.value) return
   await auth.updateStatus(newStatus)
+
+  $q.notify({
+    message: `State: ${statusLabels[newStatus]}`,
+    color: statusColors[newStatus] || 'grey',
+    icon: statusIcons[newStatus] || 'info',
+    position: 'top',
+    timeout: 1500
+  })
 })
 
 watch(notifType, (newPref) => {
+  if (!isInitialized.value) return
   auth.setNotificationPreference(newPref)
+
+  $q.notify({
+    message: `Notifications: ${notifLabels[newPref]}`,
+    color: notifColors[newPref] || 'grey',
+    icon: notifIcons[newPref] || 'info',
+    position: 'top',
+    timeout: 1500
+  })
 })
 
 onMounted(async () => {
@@ -40,6 +98,8 @@ onMounted(async () => {
     state.value = auth.user.activity_status
   }
   notifType.value = auth.notificationPreference
+
+  isInitialized.value = true
 })
 
 async function logout() {

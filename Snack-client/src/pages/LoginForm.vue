@@ -11,6 +11,7 @@ const auth = useAuthStore();
 const form = ref({
   email: '',
   password: '',
+  isPwd: true,
 })
 
 async function onSubmit() {
@@ -57,6 +58,7 @@ function onReset(): void {
           type="email"
           label="Enter your email*"
           bg-color="deep-purple-1"
+          maxlength="40"
           lazy-rules
           :rules="[
             val => !!val || 'Email required',
@@ -66,15 +68,23 @@ function onReset(): void {
         <q-input
           outlined
           v-model="form.password"
-          type="password"
+          :type="form.isPwd ? 'password' : 'text'"
           label="Enter your password*"
           bg-color="deep-purple-1"
+          maxlength="30"
           lazy-rules
           :rules="[
             val => !!val || 'Password required',
             val => val.length >= 8 || 'Min 8 characters required'
-          ]"
-        />
+          ]">
+          <template v-slot:append>
+            <q-icon
+              :name="form.isPwd ? 'visibility_off' : 'visibility'"
+              class="cursor-pointer"
+              @click="form.isPwd = !form.isPwd"
+            />
+          </template>
+        </q-input>
         <div class="row justify-between items-center q-pt-md">
           <div>
             <q-btn label="Log-in" type="submit" color="accent" />

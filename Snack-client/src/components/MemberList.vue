@@ -141,7 +141,7 @@ function getStatusLabel(status: string) {
 
             <q-badge
               v-if="user.id === chat.moderatorId"
-              class="self-center q-ma-sm text-white"
+              class="self-center q-ma-sm q-mr-none text-white"
             >
               M
             </q-badge>

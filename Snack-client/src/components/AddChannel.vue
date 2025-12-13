@@ -69,6 +69,7 @@
           label="Channel name*"
           dense
           autofocus
+          @keydown.enter.prevent
           :input-style="{maxHeight: '42px'}"
         />
 

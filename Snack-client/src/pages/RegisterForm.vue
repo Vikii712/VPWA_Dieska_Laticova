@@ -7,6 +7,7 @@ import { useAuthStore } from "src/stores/auth";
 const $q = useQuasar();
 const router = useRouter();
 const auth = useAuthStore();
+const isPwd = ref(true)
 
 const form = ref({
   nick: '',
@@ -71,7 +72,7 @@ function onReset(): void {
               v-model="form.name"
               label="Enter your name*"
               bg-color="deep-purple-1"
-              maxlength="50"
+              maxlength="30"
               :rules="[val => (val && val.length > 0) || 'Name required']"
             />
           </div>
@@ -81,7 +82,7 @@ function onReset(): void {
               v-model="form.lastName"
               label="Enter your surname*"
               bg-color="deep-purple-1"
-              maxlength="50"
+              maxlength="30"
               :rules="[val => (val && val.length > 0) || 'Surname required']"
             />
           </div>
@@ -92,6 +93,7 @@ function onReset(): void {
           type="email"
           label="Enter your email*"
           bg-color="deep-purple-1"
+          maxlength="40"
           lazy-rules
           :rules="[
             val => !!val || 'Email required',
@@ -101,15 +103,23 @@ function onReset(): void {
         <q-input
           outlined
           v-model="form.password"
-          type="password"
+          :type="isPwd ? 'password' : 'text'"
           label="Enter your password*"
           bg-color="deep-purple-1"
+          maxlength="30"
           lazy-rules
           :rules="[
             val => !!val || 'Password required',
             val => val.length >= 8 || 'Min 8 characters required'
-          ]"
-        />
+          ]">
+          <template v-slot:append>
+            <q-icon
+              :name="isPwd ? 'visibility_off' : 'visibility'"
+              class="cursor-pointer"
+              @click="isPwd = !isPwd"
+            />
+          </template>
+        </q-input>
         <div class="row justify-between items-center">
           <div>
             <q-btn label="Register" type="submit" color="accent" />
