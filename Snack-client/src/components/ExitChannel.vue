@@ -14,6 +14,10 @@ const isModerator = computed(() => {
   return currentUserId != null && moderatorId != null && currentUserId === moderatorId;
 });
 
+defineOptions({
+  inheritAttrs: false
+})
+
 async function confirmExit() {
   exitDialog.value = false;
 

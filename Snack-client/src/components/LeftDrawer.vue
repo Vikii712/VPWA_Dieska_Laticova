@@ -10,6 +10,8 @@ const chat = useChatStore()
 const props = defineProps<{mini: boolean}>()
 const text = ref<string>("")
 
+
+
 onMounted(async () => {
   await chat.fetchChannels()
 })
