@@ -103,6 +103,11 @@ onMounted(async () => {
 })
 
 async function logout() {
+  try {
+    await auth.updateStatus('offline')
+  } catch (e) {
+    console.warn('Failed to set offline status: ', e)
+  }
   await auth.logout()
   void router.push('/login')
 }

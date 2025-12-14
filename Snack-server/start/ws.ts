@@ -125,7 +125,6 @@ app.ready(() => {
           channelId,
           createdBy: userId,
           content: message.content,
-          typing: false
         })
 
         await savedMessage.load('author')
