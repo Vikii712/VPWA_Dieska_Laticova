@@ -3,14 +3,13 @@ import AddChannel from "components/AddChannel.vue";
 import ExitChannel from "components/ExitChannel.vue";
 import JoinChannel from "components/JoinChannel.vue";
 import { useChatStore } from "stores/chat";
-import {computed, onMounted, ref} from "vue";
+import { computed, onMounted, ref } from "vue";
+import { DateTime } from 'luxon'
 
 const chat = useChatStore()
 
 const props = defineProps<{mini: boolean}>()
 const text = ref<string>("")
-
-
 
 onMounted(async () => {
   await chat.fetchChannels()
@@ -24,6 +23,7 @@ async function selectChannel(channelId: number) {
   }
 
   await chat.loadChannel(channelId)
+  await chat.fetchChannels()
 }
 
 const filteredChannels = computed(() => {
@@ -43,13 +43,13 @@ const sortedChannels = computed(() => {
     if (a.invited && !b.invited) return -1
     if (!a.invited && b.invited) return 1
 
-    const unreadA = chat.unreadChannels[a.id] || 0
-    const unreadB = chat.unreadChannels[b.id] || 0
+    if (a.unread && !b.unread) return -1
+    if (b.unread && !a.unread) return 1
 
-    if (unreadA > 0 && unreadB === 0) return -1
-    if (unreadB > 0 && unreadA === 0) return 1
+    const dateA = a.lastActiveAt ? DateTime.fromISO(a.lastActiveAt).toMillis() : 0
+    const dateB = b.lastActiveAt ? DateTime.fromISO(b.lastActiveAt).toMillis() : 0
 
-    return 0
+    return dateB - dateA
   })
 })
 </script>
@@ -104,7 +104,7 @@ const sortedChannels = computed(() => {
             </q-badge>
 
             <q-badge
-              v-else-if="chat.unreadChannels[channel.id]! > 0"
+              v-else-if="channel.unread"
               color="teal-10"
               floating
               class="q-ml-sm"

@@ -23,6 +23,9 @@ export default class ChannelUser extends BaseModel {
   declare member: boolean
 
   @column()
+  declare unread: boolean
+
+  @column()
   declare ban: number
 
   @column.dateTime({ autoCreate: true })

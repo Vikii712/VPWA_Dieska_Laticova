@@ -8,6 +8,7 @@ import Message from "#models/message";
 import Channel from "#models/channel";
 import Mention from "#models/mention";
 import ChannelUser from "#models/channel_user";
+import { DateTime } from 'luxon';
 
 export let io: Server
 
@@ -128,9 +129,16 @@ app.ready(() => {
         })
 
         await savedMessage.load('author')
-
         await processMentions(savedMessage.content, savedMessage.id)
         await savedMessage.load('mentions')
+
+
+        await db
+          .from('channels')
+          .where('id', channelId)
+          .update({
+            last_active_at: DateTime.now().toSQL()
+          })
 
         const channel = await Channel.find(channelId)
 
@@ -149,6 +157,12 @@ app.ready(() => {
             mentionedId: m.mentionedId
           }))
         }
+
+        await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', '!=', userId)
+          .update({ unread: true })
 
         const usersInChannel = await db
           .from('channel_users')
@@ -169,6 +183,26 @@ app.ready(() => {
       } catch (error) {
         console.error('Error broadcasting message:', error)
         callback?.({ status: 'error', error: 'Failed to broadcast message' })
+      }
+    })
+
+    socket.on('markAsRead', async ({ channelId }) => {
+      try {
+        const userId = socket.data.userId
+        if (!userId || !channelId) return
+
+        console.log(`Marking channel ${channelId} as read for user ${userId}`)
+
+        await db
+          .from('channel_users')
+          .where('channel_id', channelId)
+          .where('user_id', userId)
+          .update({ unread: false })
+
+        console.log(`Channel ${channelId} marked as read for user ${userId}`)
+
+      } catch (error) {
+        console.error('Error marking channel as read:', error)
       }
     })
 

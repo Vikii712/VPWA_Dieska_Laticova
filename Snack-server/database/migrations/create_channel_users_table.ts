@@ -25,6 +25,7 @@ export default class ChannelUsers extends BaseSchema {
 
       table.boolean('invited').defaultTo(false).notNullable()
       table.boolean('member').defaultTo(true).notNullable()
+      table.boolean('unread').defaultTo(false).notNullable()
       table.integer('ban').unsigned().defaultTo(0).notNullable()
 
       table.check('ban >= 0 AND ban <= 3')

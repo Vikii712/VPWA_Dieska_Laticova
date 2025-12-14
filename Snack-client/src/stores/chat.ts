@@ -11,6 +11,7 @@ export interface Channel {
   moderatorId: number
   lastActiveAt?: string
   invited?: boolean
+  unread?: boolean
 }
 
 export interface Mention {
@@ -183,8 +184,12 @@ export const useChatStore = defineStore('chat', () => {
     const socketStore = useSocketStore()
     socketStore.joinChannel(channelId)
 
+    socketStore.markChannelAsRead(channelId)
+
     await nextTick()
     window.dispatchEvent(new Event('channel-switched'))
+
+    await fetchChannels()
   }
 
   async function reloadCurrentChannel() {

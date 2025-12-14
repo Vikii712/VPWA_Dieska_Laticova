@@ -11,7 +11,7 @@ export default class ChannelsController {
     const user = auth.getUserOrFail()
 
     await user.load('channels', (query) => {
-      query.pivotColumns(['invited', 'member'])
+      query.pivotColumns(['invited', 'member', 'unread'])
         .where((subQuery) => {
           subQuery
             .wherePivot('member', true)
@@ -25,7 +25,9 @@ export default class ChannelsController {
         name: channel.name,
         public: channel.public,
         moderatorId: channel.moderatorId,
-        invited: channel.$extras.pivot_invited
+        invited: channel.$extras.pivot_invited,
+        unread: channel.$extras.pivot_unread,
+        lastActiveAt: channel.lastActiveAt?.toISO()
       }))
     })
   }

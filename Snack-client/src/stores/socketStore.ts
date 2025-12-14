@@ -84,6 +84,13 @@ export const useSocketStore = defineStore('socket', () => {
       }
 
       chatStore.addMessage(data)
+      await chatStore.fetchChannels()
+
+
+      if (data.channelId === chatStore.currentChannelId){
+        markChannelAsRead(data.channelId)
+      }
+
       await nextTick()
       window.dispatchEvent(new Event('new-message-received'))
 
@@ -314,6 +321,16 @@ export const useSocketStore = defineStore('socket', () => {
     socket.value.emit('joinChannel', { userId, channelId })
   }
 
+  function markChannelAsRead(channelId: number) {
+    if (!socket.value?.connected) {
+      console.warn('Socket not connected, cannot mark as read')
+      return
+    }
+
+    socket.value.emit('markAsRead', { channelId })
+    console.log(`Emitted markAsRead for channel ${channelId}`)
+  }
+
   function emitTyping(channelId: number, isTyping: boolean, content: string = '') {
     if (!socket.value?.connected) {
       console.warn('Socket not connected, cannot emit typing')
@@ -466,5 +483,6 @@ export const useSocketStore = defineStore('socket', () => {
     inviteUser,
     acceptInvite,
     emitTyping,
+    markChannelAsRead,
   }
 })
