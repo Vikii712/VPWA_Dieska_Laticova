@@ -116,6 +116,7 @@ export const useSocketStore = defineStore('socket', () => {
           type: 'warning',
           color: 'yellow-8',
           icon: 'alternate_email',
+          html: true,
           message: `<strong>${data.author.nick}</strong> mentioned you!`,
           position: 'top',
           timeout: 3000,

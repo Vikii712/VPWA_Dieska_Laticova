@@ -439,51 +439,24 @@ app.ready(() => {
 
 
 
-    socket.on('statusChange', async (data: { status: string }) => {
-      try {
-        const { status } = data
-        if (userId === undefined) {
-          console.warn('statusChange: userId is undefined')
-          return
-        }
+    socket.on('statusChange', async (data: { status: string }, callback?: () => void) => {
+      const userId = socket.data.userId
 
-        console.log(`User ${userId} changing status to ${status}`)
-        await db
-          .from('users')
-          .where('id', userId)
-          .update({ activity_status: status })
+      await User.query().where('id', userId).update({ activity_status: data.status })
 
-        const userChannels = await db
-          .from('channel_users')
-          .where('user_id', userId)
-          .select('channel_id')
+      const userChannels = await ChannelUser.query()
+        .where('user_id', userId)
+        .select('channel_id')
 
-        console.log(`User ${userId} is in ${userChannels.length} channels`)
-
-        for (const { channel_id } of userChannels) {
-          const channelUsers = await db
-            .from('channel_users')
-            .where('channel_id', channel_id)
-            .select('user_id')
-
-          console.log(`Broadcasting status to ${channelUsers.length} users in channel ${channel_id}`)
-          for (const { user_id } of channelUsers) {
-            const sockets = getUserSockets(user_id)
-            for (const socketId of sockets) {
-              io.to(socketId).emit('userStatusUpdate', {
-                userId,
-                status,
-                channelId: channel_id
-              })
-              console.log(`Sent status update to socket ${socketId}`)
-            }
-          }
-        }
-
-        console.log(`User ${userId} status changed to ${status} successfully`)
-      } catch (error) {
-        console.error('Error updating user status:', error)
+      for (const channel of userChannels) {
+        socket.to(`channel-${channel.channelId}`).emit(`userStatusUpdate`, {
+          userId: userId,
+          status: data.status,
+          channelId: channel.channelId
+        })
       }
+
+      if(callback) callback()
     })
 
     socket.on('disconnect', () => {

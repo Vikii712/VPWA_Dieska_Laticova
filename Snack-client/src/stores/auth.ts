@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import {computed, ref} from 'vue'
+import {computed, nextTick, ref} from 'vue'
 import { api } from 'src/services/api'
 
 interface User {
@@ -100,22 +100,33 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       console.log('Updating status to:', status)
 
-      await api('POST', '/user/status', { status })
-
       const oldStatus = user.value?.activity_status
+
+      await api('POST', '/user/status', {status})
 
       if (user.value) {
         user.value.activity_status = status
       }
 
-      const { useSocketStore } = await import('stores/socketStore')
+      const {useSocketStore} = await import('stores/socketStore')
       const socketStore = useSocketStore()
 
       if (status === 'offline') {
-        console.log('Going offline, disconnecting socket...')
-        socketStore.disconnect()
-      }
-      else if (oldStatus === 'offline' && status !== 'offline') {
+        if (socketStore.socket?.connected) {
+          socketStore.socket.emit('statusChange', {status}, () => {
+            console.log('Status change confirmed, disconnecting...')
+            socketStore.disconnect()
+          })
+
+          setTimeout(() => {
+            if (socketStore.connected) {
+              socketStore.disconnect()
+            }
+          }, 2000)
+        } else {
+          socketStore.disconnect()
+        }
+      } else if (oldStatus === 'offline' && status !== 'offline') {
         console.log('Coming back online, reconnecting socket...')
         socketStore.init(token.value || undefined)
 
@@ -132,36 +143,44 @@ export const useAuthStore = defineStore('auth', () => {
           }, 5000)
         })
 
-        const { useChatStore } = await import('stores/chat')
+        if (socketStore.socket?.connected) {
+          socketStore.socket.emit('statusChange', {status})
+        }
+
+        const {useChatStore} = await import('stores/chat')
         const chatStore = useChatStore()
 
         const currentChannelId = chatStore.currentChannelId
 
         await chatStore.fetchChannels()
 
-        if (currentChannelId) {
-          console.log(`Reloading channel ${currentChannelId}`)
-          chatStore.channelMessages[currentChannelId] = []
-          if (chatStore.channelMeta[currentChannelId]) {
-            chatStore.channelMeta[currentChannelId] = {
-              currentPage: 0,
-              hasMore: true,
-              isLoading: false
-            }
+        for (const channel of chatStore.channels) {
+          if (channel.invited) continue
+
+          chatStore.channelMessages[channel.id] = []
+          chatStore.channelMeta[channel.id] = {
+            currentPage: 0,
+            hasMore: true,
+            isLoading: false
           }
-          await chatStore.loadChannel(currentChannelId)
-          socketStore.joinChannel(currentChannelId)
+
+          await chatStore.loadMessages(channel.id, 1)
+
+          socketStore.joinChannel(channel.id)
         }
-      }
-      else if (socketStore.socket?.connected) {
+
+        if (currentChannelId) {
+          await chatStore.loadChannelUsers(currentChannelId)
+
+          await nextTick()
+          window.dispatchEvent(new Event('channel-switched'))
+        }
+      } else if (socketStore.socket?.connected) {
         console.log('Emitting statusChange')
-        socketStore.socket.emit('statusChange', { status })
       }
-
-      console.log('Status updated successfully')
-
+      socketStore.socket!.emit('statusChange', {status})
     } catch (error) {
-      console.error('Failed to update status:', error)
+      console.error('Failed to fetch user:', error)
     }
   }
 
