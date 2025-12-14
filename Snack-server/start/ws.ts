@@ -144,7 +144,6 @@ app.ready(() => {
             id: savedMessage.author.id,
             nick: savedMessage.author.nick
           },
-          typing: false,
           mentions: savedMessage.mentions.map(m => ({
             id: m.id,
             mentionedId: m.mentionedId

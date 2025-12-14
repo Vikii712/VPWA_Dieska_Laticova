@@ -18,9 +18,6 @@ export default class Message extends BaseModel {
   @column()
   declare content: string;
 
-  @column()
-  declare typing: boolean;
-
   @belongsTo(() => User, {
     foreignKey: "createdBy",
   })
