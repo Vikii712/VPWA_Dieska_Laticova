@@ -133,11 +133,14 @@ app.ready(() => {
         await processMentions(savedMessage.content, savedMessage.id)
         await savedMessage.load('mentions')
 
+        const channel = await Channel.find(channelId)
+
         const dto = {
           id: savedMessage.id,
           content: savedMessage.content,
           createdAt: savedMessage.createdAt.toISO(),
-          channelId,
+          channelId: channelId,
+          channelName: channel?.name || '',
           author: {
             id: savedMessage.author.id,
             nick: savedMessage.author.nick

@@ -104,9 +104,10 @@ export const useSocketStore = defineStore('socket', () => {
           type: isMentioned ? 'warning' : 'info',
           color: isMentioned ? 'yellow-8' : 'blue',
           ...(isMentioned && { icon: 'alternate_email' }),
+          html: true,
           message: isMentioned
-            ? `${data.author.nick} mentioned you in ${data.channelName || `channel #${data.channelId}`}`
-            : `New message in ${data.channelName || `channel #${data.channelId}`}`,
+            ? `<strong>${data.author.nick}</strong> mentioned you in <strong>${data.channelName || `channel #${data.channelId}</strong>`}`
+            : `New message in <strong>${data.channelName || `channel #${data.channelId}</strong>`}`,
           position: 'top',
           timeout: isMentioned ? 5000 : 3000,
         })
@@ -115,7 +116,7 @@ export const useSocketStore = defineStore('socket', () => {
           type: 'warning',
           color: 'yellow-8',
           icon: 'alternate_email',
-          message: `${data.author.nick} mentioned you!`,
+          message: `<strong>${data.author.nick}</strong> mentioned you!`,
           position: 'top',
           timeout: 3000,
         })
