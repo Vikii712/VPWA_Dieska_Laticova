@@ -158,7 +158,15 @@ export const useCommandStore = defineStore('command', () => {
       return { type: 'negative', message: 'Only the channel moderator can revoke users.' }
     }
 
-    socketStore.revokeUser(chat.currentChannelId, targetNick)
+    const myId = auth.user?.id
+
+    if (myId === undefined) {
+      return { type: 'negative', message: 'User is not authenticated' }
+    }
+
+    socketStore.revokeUser(myId, chat.currentChannelId, targetNick)
+
+    console.log('command store odoslal')
 
     return { type: 'positive', message: `Revoke request sent for ${targetNick}.` }
   }

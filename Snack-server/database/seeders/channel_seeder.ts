@@ -14,7 +14,7 @@ export default class extends BaseSeeder {
         lastName: 'User',
         email: 'admin@example.com',
         password: 'password',
-        activity_status: 'active'
+        activity_status: 'offline'
       },
       {
         nick: 'Vikinka',
@@ -22,7 +22,7 @@ export default class extends BaseSeeder {
         lastName: 'Latičová',
         email: 'viki@gmail.com',
         password: 'laticova',
-        activity_status: 'active'
+        activity_status: 'offline'
       },
       {
         nick: 'mdieska',
@@ -30,7 +30,7 @@ export default class extends BaseSeeder {
         lastName: 'Dieška',
         email: 'mdieska@gmail.com',
         password: 'password123',
-        activity_status: 'active'
+        activity_status: 'offline'
       },
     ])
 

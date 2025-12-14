@@ -332,7 +332,6 @@ app.ready(() => {
 
 
     socket.on('typing', async (data) => {
-      //console.log('SERVER: typing received:', data, 'from userId:', userId)
       try {
         const { channelId, isTyping, content } = data
         if (userId === undefined) return
@@ -362,24 +361,37 @@ app.ready(() => {
     })
 
 
-    socket.on('userRevoked', async ({ channelId, targetNick, moderatorId }) => {
+    socket.on('userRevoked', async ({myId, channelId, targetNick}) => {
+      console.log('web socket skusa')
       try {
 
         const channel = await Channel.find(channelId)
         if (!channel) return console.warn('Channel not found:', channelId)
 
         if (channel.public) return console.warn('Cannot revoke in public channel')
-        if (channel.moderatorId !== moderatorId) return console.warn('Only moderator can revoke')
+        if (channel.moderatorId !== myId) return console.warn('Only moderator can revoke')
 
         const targetUser = await User.query().where('nick', targetNick).first()
         if (!targetUser) return console.warn('Target user not found:', targetNick)
 
-        if (targetUser.id === moderatorId) return console.warn('Cannot revoke yourself')
+        if (targetUser.id === myId) return console.warn('Cannot revoke yourself')
 
-        await db.from('channel_users')
+        const channelUser = await ChannelUser.query()
           .where('channel_id', channelId)
           .where('user_id', targetUser.id)
-          .delete()
+          .first()
+
+        console.log('web socket: channelId:', channelId, 'targetUser:', targetUser.id, 'channeluser:', channelUser)
+
+        if (!channelUser) {
+          console.warn('User not in channel')
+          return
+        }
+
+        await channelUser.merge({
+          member: false,
+          invited: false
+        }).save()
 
         io.to(`channel-${channelId}`).emit('userWasRevoked', {
           channelId,
@@ -394,7 +406,7 @@ app.ready(() => {
     })
 
 
-    socket.on('userKicked', async ({myId, channelId, targetNick, moderatorId }) => {
+    socket.on('userKicked', async ({myId, channelId, targetNick }) => {
       try {
         const channel = await Channel.find(channelId)
         if (!channel) return console.warn('Channel not found:', channelId)
@@ -405,7 +417,7 @@ app.ready(() => {
         if (!targetUser) return console.warn('Target user not found:', targetNick)
 
         if (targetUser.id === channel.moderatorId) return console.warn('Cannot kick moderator')
-        if (targetUser.id === moderatorId) return console.warn('Cannot kick yourself')
+        if (targetUser.id === myId) return console.warn('Cannot kick yourself')
 
         const channelUser = await ChannelUser.query()
           .where('channel_id', channelId)
@@ -422,6 +434,7 @@ app.ready(() => {
 
           await channelUser.merge({
             ban: Math.min(newBanValue, 3),
+            invited:false,
             member: false,
           }).save()
 
@@ -460,6 +473,8 @@ app.ready(() => {
     })
 
     socket.on('disconnect', () => {
+
+
       if (userId !== undefined) {
         if (userSockets[userId]) {
           userSockets[userId] = userSockets[userId].filter(id => id !== socket.id)

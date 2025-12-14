@@ -212,6 +212,9 @@ export const useSocketStore = defineStore('socket', () => {
           chatStore.currentChannelId = null
         }
         await chatStore.fetchChannels()
+        await chatStore.loadChannelUsers(channelId)
+        chatStore.currentChannelUsers.splice(0, chatStore.currentChannelUsers.length)
+
 
         if (auth.isOnline && !auth.isDND) {
           Notify.create({
@@ -226,6 +229,7 @@ export const useSocketStore = defineStore('socket', () => {
         await chatStore.loadChannelUsers(channelId)
       }
     })
+
     socket.value.on('userWasInvited', async ({channelId}) => {
       const auth = useAuthStore()
       const {useChatStore} = await import('stores/chat')
@@ -268,6 +272,8 @@ export const useSocketStore = defineStore('socket', () => {
           chatStore.currentChannelId = null
         }
         await chatStore.fetchChannels()
+        await chatStore.loadChannelUsers(channelId)
+        chatStore.currentChannelUsers.splice(0, chatStore.currentChannelUsers.length)
 
         Notify.create({
           type: 'negative',
@@ -344,13 +350,13 @@ export const useSocketStore = defineStore('socket', () => {
   }
 
 
-  const revokeUser = (channelId: number, targetNick: string) => {
-    //console.log('revokeUser called:', { channelId, targetNick, connected: connected.value })
-    socket.value?.emit('userRevoked', { channelId, targetNick })
+  const revokeUser = (myId: number, channelId: number, targetNick: string) => {
+    console.log('socket store prijal')
+    socket.value?.emit('userRevoked', { myId, channelId, targetNick })
+    console.log('socket store odoslal')
   }
 
   const kickUser = (myId: number, channelId: number, targetNick: string) => {
-    //console.log('kickUser called:', { channelId, targetNick })
     socket.value?.emit('userKicked', { myId, channelId, targetNick })
   }
 
