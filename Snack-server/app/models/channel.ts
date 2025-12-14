@@ -3,7 +3,6 @@ import type { HasMany, BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relat
 import { BaseModel, column, hasMany, belongsTo, manyToMany } from '@adonisjs/lucid/orm'
 import Message from '#models/message'
 import User from '#models/user'
-import Notification from '#models/notification'
 
 export default class Channel extends BaseModel {
   @column({ isPrimary: true })
@@ -31,11 +30,6 @@ export default class Channel extends BaseModel {
     foreignKey: "channelId",
   })
   declare messages: HasMany<typeof Message>
-
-  @hasMany(() => Notification, {
-    foreignKey: 'channelId',
-  })
-  declare notifications: HasMany<typeof Notification>
 
   @manyToMany(() => User, {
     pivotTable: 'channel_users',

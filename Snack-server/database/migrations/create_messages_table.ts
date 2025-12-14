@@ -9,7 +9,6 @@ export default class extends BaseSchema {
       table.integer('created_by').unsigned().notNullable()
       table.integer('channel_id').unsigned().notNullable()
       table.text('content').notNullable()
-      table.boolean('typing').defaultTo(false)
 
       table.foreign('created_by').references('id').inTable('users').onDelete('CASCADE')
       table.foreign('channel_id').references('id').inTable('channels').onDelete('CASCADE')

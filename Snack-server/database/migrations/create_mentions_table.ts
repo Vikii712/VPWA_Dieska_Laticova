@@ -6,7 +6,7 @@ export default class Mentions extends BaseSchema {
 
   public async up() {
     this.schema.createTable(this.tableName, (table) => {
-      table.increments('id') // primárny kľúč
+      table.increments('id')
       table.integer('message_id').unsigned().notNullable()
       table.integer('mentioned_id').unsigned().notNullable()
       table.timestamp('created_at', { useTz: true }).defaultTo(this.now())

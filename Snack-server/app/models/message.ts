@@ -3,7 +3,6 @@ import type {BelongsTo, HasMany} from '@adonisjs/lucid/types/relations'
 import {BaseModel, column, belongsTo, hasMany} from '@adonisjs/lucid/orm'
 import User from "#models/user"
 import Channel from "#models/channel"
-import Notification from "#models/notification";
 import Mention from "#models/mention";
 
 export default class Message extends BaseModel {
@@ -36,12 +35,6 @@ export default class Message extends BaseModel {
     foreignKey: 'messageId',
   })
   declare mentions: HasMany<typeof Mention>
-
-  @hasMany(() => Notification, {
-    foreignKey: 'messageId',
-  })
-  declare notifications: HasMany<typeof Notification>
-
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

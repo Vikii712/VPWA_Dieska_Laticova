@@ -7,7 +7,6 @@ import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
 import {DbAccessTokensProvider} from "@adonisjs/auth/access_tokens";
 import Message from "#models/message"
 import Channel from "#models/channel"
-import Notification from "#models/notification";
 import Mention from "#models/mention";
 
 
@@ -37,11 +36,6 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @column()
   declare activity_status: string
-
-  @hasMany(() => Notification, {
-    foreignKey: 'userId',
-  })
-  declare notifications: HasMany<typeof Notification>
 
   @hasMany(() => Mention, {
     foreignKey: 'mentionedId',
