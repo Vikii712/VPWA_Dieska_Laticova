@@ -168,7 +168,7 @@ export const useCommandStore = defineStore('command', () => {
 
     console.log('command store odoslal')
 
-    return { type: 'positive', message: `Revoke request sent for ${targetNick}.` }
+    return { type: 'positive', message: `${targetNick} revoked.` }
   }
 
   function handleKick(parts: string[]): CommandResult {
