@@ -27,7 +27,6 @@ export interface Message {
     id: number
     nick: string
   }
-  typing?: boolean
   mentions?: Mention[]
 }
 

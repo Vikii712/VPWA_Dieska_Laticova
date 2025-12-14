@@ -15,6 +15,5 @@ export const createMessageValidator = vine.compile(
   vine.object({
     content: vine.string().trim().minLength(1).maxLength(500),
     channelId: vine.number().positive(),
-    typing: vine.boolean()
   })
 )

@@ -73,7 +73,6 @@ export default class ChannelsController {
           id: msg.author.id,
           nick: msg.author.nick,
         },
-        typing: msg.typing,
         mentions: msg.mentions?.map(mention => ({
           id: mention.id,
           mentionedId: mention.mentionedId,
