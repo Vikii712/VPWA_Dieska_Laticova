@@ -2,6 +2,7 @@ Vývoj progresívnych webových aplikácií @ FIIT STU
 
 https://github.com/kurice/vpwa26
 
+# Požiadavky
 
 [✓] registrácia, prihlásenie a odhlásenie používateľa
 
@@ -72,3 +73,10 @@ https://github.com/kurice/vpwa26
 [✓] ak má používateľ aktívny niektorý z kanálov (nachádza sa v okne správ pre daný kanál) vidí v stavovej lište informáciu o tom, kto aktuálne píše správu (napr. Ed is typing)
 
 [✓] po kliknutí na nickName si môže pozrieť rozpísaný text v reálnom čase, predtým, ako ju odosielateľ odošle (každá zmena je viditeľná) :-)
+
+# Obrazovky
+
+![Register](screens/register.png)
+![Čet](screens/chat.png)
+![Źivý čet](screens/liveChat.png)
+![Stav Používateľa](screens/state.png)
